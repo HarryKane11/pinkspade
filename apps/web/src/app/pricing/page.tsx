@@ -14,7 +14,7 @@ export default function PricingPage() {
           Simple, transparent pricing.
         </h1>
         <p className="text-base md:text-lg text-zinc-500 max-w-xl font-light leading-relaxed mb-16">
-          Start for free. Scale when you're ready.
+          Start for free. Scale when you&apos;re ready.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl w-full">
