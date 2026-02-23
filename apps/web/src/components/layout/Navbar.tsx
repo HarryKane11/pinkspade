@@ -118,10 +118,10 @@ export function Navbar({ onStartSetup }: NavbarProps) {
           {user ? (
             <div className="flex items-center gap-3">
               <Link
-                href="/workspace"
+                href="/dashboard"
                 className="text-xs font-medium text-zinc-600 hover:text-zinc-900 transition-colors hidden sm:block"
               >
-                Workspace
+                Dashboard
               </Link>
 
               {/* Credit badge */}
