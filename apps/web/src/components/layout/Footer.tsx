@@ -12,15 +12,15 @@ export function Footer() {
           Pink Spade
         </Link>
         <div className="flex items-center gap-6 text-xs text-zinc-500 font-light">
-          <a href="#" className="hover:text-zinc-900 transition-colors">
+          <Link href="/privacy" className="hover:text-zinc-900 transition-colors">
             Privacy Policy
-          </a>
-          <a href="#" className="hover:text-zinc-900 transition-colors">
+          </Link>
+          <Link href="/terms" className="hover:text-zinc-900 transition-colors">
             Terms of Service
-          </a>
-          <a href="#" className="hover:text-zinc-900 transition-colors">
+          </Link>
+          <Link href="/contact" className="hover:text-zinc-900 transition-colors">
             Contact
-          </a>
+          </Link>
         </div>
         <div className="text-xs text-zinc-400 font-light">
           © 2026 Pink Spade Inc. All rights reserved.
