@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks';
 import { PLAN_CREDITS } from '@/lib/polar';
 
 // Use service role for webhook processing (bypasses RLS)
@@ -11,27 +12,42 @@ function getAdminClient() {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    // Verify webhook signature (Polar sends it in headers)
-    const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      const signature = request.headers.get('x-polar-signature');
-      if (!signature) {
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
-      }
-      // In production, verify the HMAC signature here
-    }
+  const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error('POLAR_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
 
-    const event = await request.json();
+  // Read raw body for signature verification
+  const body = await request.text();
+  const headers: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  // Verify webhook signature using Polar SDK (Standard Webhooks)
+  let event: { type: string; data?: Record<string, unknown> };
+  try {
+    event = validateEvent(body, headers, webhookSecret) as typeof event;
+  } catch (err) {
+    if (err instanceof WebhookVerificationError) {
+      console.error('Webhook signature verification failed:', err.message);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+    }
+    console.error('Webhook validation error:', err);
+    return NextResponse.json({ error: 'Validation failed' }, { status: 400 });
+  }
+
+  try {
     const supabase = getAdminClient();
 
     switch (event.type) {
       case 'checkout.completed': {
-        const userId = event.data?.metadata?.userId;
-        const planId = event.data?.metadata?.planId as string;
+        const metadata = event.data?.metadata as Record<string, string> | undefined;
+        const userId = metadata?.userId;
+        const planId = metadata?.planId;
         if (!userId || !planId) break;
 
-        // Determine plan from planId
         const plan = planId.startsWith('ultra') ? 'ultra' : 'pro';
         const quota = PLAN_CREDITS[plan] ?? 500;
 
@@ -58,17 +74,17 @@ export async function POST(request: NextRequest) {
           amount: quota,
           type: 'purchase',
           description: `Plan upgrade to ${plan}`,
-          metadata: { planId, checkoutId: event.data?.id },
+          metadata: { planId, checkoutId: (event.data as Record<string, unknown>)?.id },
         });
 
         break;
       }
 
       case 'subscription.canceled': {
-        const userId = event.data?.metadata?.userId;
+        const metadata = event.data?.metadata as Record<string, string> | undefined;
+        const userId = metadata?.userId;
         if (!userId) break;
 
-        // Downgrade to free at end of billing period
         await supabase
           .from('profiles')
           .update({ plan: 'free' })
@@ -86,14 +102,14 @@ export async function POST(request: NextRequest) {
       }
 
       case 'subscription.renewed': {
-        const userId = event.data?.metadata?.userId;
-        const planId = event.data?.metadata?.planId as string;
+        const metadata = event.data?.metadata as Record<string, string> | undefined;
+        const userId = metadata?.userId;
+        const planId = metadata?.planId;
         if (!userId) break;
 
         const plan = planId?.startsWith('ultra') ? 'ultra' : 'pro';
         const quota = PLAN_CREDITS[plan] ?? 500;
 
-        // Reset monthly credits
         await supabase
           .from('credit_balances')
           .update({
@@ -102,7 +118,6 @@ export async function POST(request: NextRequest) {
           })
           .eq('user_id', userId);
 
-        // Log monthly reset
         await supabase.from('credit_ledger').insert({
           user_id: userId,
           amount: quota,
@@ -114,9 +129,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ received: true }, { status: 202 });
   } catch (err) {
-    console.error('Webhook error:', err);
+    console.error('Webhook processing error:', err);
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }

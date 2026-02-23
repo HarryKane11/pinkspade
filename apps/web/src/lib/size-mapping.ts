@@ -20,8 +20,10 @@ export function mapToAspectRatio(
   height: number,
   supported: string[]
 ): string {
+  if (!supported.length) return "1:1";
+
   const target = width / height;
-  let closest = supported[0];
+  let closest: string | null = null;
   let minDiff = Infinity;
 
   for (const ratio of supported) {
@@ -35,7 +37,8 @@ export function mapToAspectRatio(
     }
   }
 
-  return closest;
+  // Fallback: if no valid ratio found (all "auto" or empty), return "1:1"
+  return closest ?? "1:1";
 }
 
 /**

@@ -10,6 +10,8 @@ export function BrandPanel() {
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadBrand = async () => {
       // Try sessionStorage first (current session)
       try {
@@ -17,21 +19,24 @@ export function BrandPanel() {
         const url = sessionStorage.getItem('brandDnaUrl');
         if (session) {
           const dna = JSON.parse(session);
-          setBrand({
-            id: 'session',
-            brandName: dna.brandName || url || 'Brand',
-            websiteUrl: url || '',
-            extractedAt: new Date().toISOString(),
-            colors: dna.colors ?? {},
-            typography: dna.typography ?? {},
-            tone: dna.tone ?? {},
-          });
+          if (!cancelled) {
+            setBrand({
+              id: 'session',
+              brandName: dna.brandName || url || 'Brand',
+              websiteUrl: url || '',
+              extractedAt: new Date().toISOString(),
+              colors: dna.colors ?? {},
+              typography: dna.typography ?? {},
+              tone: dna.tone ?? {},
+            });
+          }
           return;
         }
       } catch { /* ignore */ }
 
       // Fallback to Supabase (most recent brand)
       const latest = await getLatestBrand();
+      if (cancelled) return;
       if (latest) {
         setBrand(latest);
         // Also load into sessionStorage for other components
@@ -57,7 +62,10 @@ export function BrandPanel() {
       }
     };
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const copyColor = useCallback((hex: string) => {

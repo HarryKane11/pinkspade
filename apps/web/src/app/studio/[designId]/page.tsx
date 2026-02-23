@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { X, LayoutGrid } from 'lucide-react';
@@ -218,10 +218,6 @@ function StudioContent() {
   const handleExport = useCallback(() => {
     setExportOpen(true);
   }, []);
-
-  const handleSave = useCallback(() => {
-    save();
-  }, [save]);
 
   const handleGenerate = useCallback(() => {
     setIsGenerating(true);
@@ -449,7 +445,7 @@ function StudioContent() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
       {/* Toolbar */}
-      <StudioToolbar onExport={handleExport} onSave={handleSave} onPreview={togglePreview} onShare={handleShare} />
+      <StudioToolbar onExport={handleExport} onPreview={togglePreview} onShare={handleShare} />
 
       {/* Main workspace */}
       <div className="flex flex-1 overflow-hidden relative">

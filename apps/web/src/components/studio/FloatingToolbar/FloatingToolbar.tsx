@@ -35,6 +35,8 @@ export function FloatingToolbar() {
 
   // Load brand data
   useEffect(() => {
+    let cancelled = false;
+
     try {
       const session = sessionStorage.getItem('brandDna');
       if (session) {
@@ -46,11 +48,14 @@ export function FloatingToolbar() {
     } catch { /* ignore */ }
 
     getLatestBrand().then((latest) => {
+      if (cancelled) return;
       if (latest) {
         setBrandColors(latest.colors);
         setBrandFonts(latest.typography);
       }
     });
+
+    return () => { cancelled = true; };
   }, []);
 
   // Close font dropdown on outside click

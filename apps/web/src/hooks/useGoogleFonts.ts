@@ -60,9 +60,7 @@ export function useGoogleFonts() {
 
     const fetchFonts = async () => {
       try {
-        const res = await fetch(
-          'https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyBwIX97bVWr3-6AIUvGkcNnmFgirefZ-20&sort=popularity'
-        );
+        const res = await fetch('/api/fonts');
         if (!res.ok) throw new Error('Failed to fetch fonts');
 
         const data = await res.json();

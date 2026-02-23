@@ -43,7 +43,7 @@ function DashboardContent() {
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        router.push('/login?redirect=/dashboard');
+        router.push('/login?next=/dashboard');
         return;
       }
 

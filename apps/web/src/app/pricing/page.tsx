@@ -138,7 +138,7 @@ export default function PricingPage() {
       }
 
       if (res.status === 401) {
-        router.push('/login?redirect=/pricing');
+        router.push('/login?next=/pricing');
         return;
       }
     } catch (err) {

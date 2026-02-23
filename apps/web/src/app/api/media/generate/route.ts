@@ -3,7 +3,7 @@ import { fal } from "@fal-ai/client";
 import { getModelById } from "@/lib/fal";
 import { mapToAspectRatio, mapToImageSize } from "@/lib/size-mapping";
 import { getCreditCost } from "@/lib/credits";
-import { checkAndDeductCredits } from "@/lib/credit-middleware";
+import { checkAndDeductCredits, refundCredits } from "@/lib/credit-middleware";
 
 // Server-side: use FAL_KEY directly (proxy is for client-side only)
 fal.config({
@@ -219,17 +219,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Call fal.ai
-    const result = await fal.subscribe(falModelId, {
-      input,
-      logs: false,
-    });
+    let result;
+    try {
+      result = await fal.subscribe(falModelId, {
+        input,
+        logs: false,
+      });
+    } catch (falErr) {
+      // Generation failed — refund credits
+      console.error("Fal AI error:", falErr);
+      await refundCredits(cost, modelId).catch(() => {});
+      const message = falErr instanceof Error ? falErr.message : "Generation failed";
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
 
     // Extract images from result
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = result.data as any;
 
     // Most models return { images: [{ url, content_type }] }
-    // nano-banana-pro returns { images: [{ url, content_type }] }
     // Vector models may return { images: [{ url }] } with SVG
     const images =
       data?.images?.map(
@@ -247,6 +255,8 @@ export async function POST(request: NextRequest) {
       ) ?? [];
 
     if (images.length === 0) {
+      // Refund credits — no images produced
+      await refundCredits(cost, modelId).catch(() => {});
       return NextResponse.json(
         {
           error: "No images generated",

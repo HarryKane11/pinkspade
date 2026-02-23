@@ -45,6 +45,32 @@ export async function checkAndDeductCredits(
 }
 
 /**
+ * Refund credits after a failed generation.
+ * Adds credits back and logs a refund entry in the ledger.
+ */
+export async function refundCredits(
+  amount: number,
+  modelId?: string
+): Promise<void> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  // Add credits back
+  await supabase.rpc('deduct_credits', {
+    p_user_id: user.id,
+    p_amount: -amount, // negative = refund
+    p_type: 'refund',
+    p_model_id: modelId ?? null,
+    p_description: `refund: ${modelId ?? 'unknown'} (generation failed)`,
+  });
+}
+
+/**
  * Get user's current credit balance.
  */
 export async function getCreditBalance(): Promise<{

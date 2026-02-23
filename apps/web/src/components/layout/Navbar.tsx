@@ -46,15 +46,18 @@ export function Navbar({ onStartSetup }: NavbarProps) {
   // Fetch credit balance when user is logged in
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     fetch('/api/credits/balance')
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
+        if (cancelled) return;
         if (data) {
           setCreditBalance(data.balance);
           setCreditPlan(data.plan);
         }
       })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, [user]);
 
   // Close dropdown on outside click

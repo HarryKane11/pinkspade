@@ -24,7 +24,6 @@ import { cn } from '@/lib/utils';
 
 interface StudioToolbarProps {
   onExport: () => void;
-  onSave: () => void;
   onPreview?: () => void;
   onShare?: () => void;
 }
@@ -47,10 +46,12 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     fetch('/api/credits/balance')
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data?.balance != null) setCreditBalance(data.balance); })
+      .then((data) => { if (!cancelled && data?.balance != null) setCreditBalance(data.balance); })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const tools = [
@@ -167,13 +168,15 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
         )}
 
         {/* Share */}
-        <button
-          onClick={onShare}
-          className="text-xs font-medium text-zinc-600 bg-white border border-zinc-200 px-3 py-1.5 rounded-md hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm flex items-center gap-2"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          Share
-        </button>
+        {onShare && (
+          <button
+            onClick={onShare}
+            className="text-xs font-medium text-zinc-600 bg-white border border-zinc-200 px-3 py-1.5 rounded-md hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm flex items-center gap-2"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            Share
+          </button>
+        )}
 
         {/* Credits badge */}
         {creditBalance !== null && (

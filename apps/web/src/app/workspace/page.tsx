@@ -10,7 +10,6 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronRight,
-  Clock,
   Image as ImageIcon,
   X,
 } from 'lucide-react';
@@ -22,7 +21,6 @@ import {
   removeDesignFromHistory,
   type DesignHistoryEntry,
 } from '@/lib/design-history';
-import { cn } from '@/lib/utils';
 
 function formatDateTime(iso: string) {
   const d = new Date(iso);
