@@ -50,7 +50,7 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
     fetch('/api/credits/balance')
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (!cancelled && data?.balance != null) setCreditBalance(data.balance); })
-      .catch(() => {});
+      .catch((err) => { console.error('Failed to fetch credit balance:', err); });
     return () => { cancelled = true; };
   }, []);
 
@@ -97,6 +97,7 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
                   : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50'
               )}
               title={tool.label}
+              aria-label={tool.label}
             >
               <tool.icon className="w-4 h-4" />
             </button>
@@ -112,6 +113,7 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
             disabled={!canUndo()}
             className="p-2 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors disabled:opacity-30"
             title="실행 취소 (Ctrl+Z)"
+            aria-label="실행 취소"
           >
             <Undo2 className="w-4 h-4" />
           </button>
@@ -120,6 +122,7 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
             disabled={!canRedo()}
             className="p-2 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors disabled:opacity-30"
             title="다시 실행 (Ctrl+Shift+Z)"
+            aria-label="다시 실행"
           >
             <Redo2 className="w-4 h-4" />
           </button>
@@ -134,6 +137,7 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
             onClick={() => setZoom(viewport.zoom / 1.2)}
             className="text-zinc-400 hover:text-zinc-900 transition-colors"
             title="축소"
+            aria-label="축소"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -144,6 +148,7 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
             onClick={() => setZoom(viewport.zoom * 1.2)}
             className="text-zinc-400 hover:text-zinc-900 transition-colors"
             title="확대"
+            aria-label="확대"
           >
             <ZoomIn className="w-4 h-4" />
           </button>

@@ -228,6 +228,7 @@ export function AssetPreviewOverlay({ asset, onClose, formats }: AssetPreviewOve
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-20 p-2 bg-zinc-100 hover:bg-zinc-200 rounded-full text-zinc-600 transition-colors"
+          aria-label="Close preview"
         >
           <X className="w-4 h-4" />
         </button>
@@ -244,6 +245,7 @@ export function AssetPreviewOverlay({ asset, onClose, formats }: AssetPreviewOve
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-40 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+        aria-label="Close preview"
       >
         <X className="w-4 h-4" />
       </button>

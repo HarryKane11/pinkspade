@@ -64,7 +64,7 @@ export function ResultsPanel({ visible, generatedAssets, selectedFormats, onPrev
                   <div className={`w-6 h-6 rounded flex items-center justify-center overflow-hidden ${count > 0 ? 'bg-zinc-900' : 'bg-zinc-200'}`}>
                     {fmt.logo ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={fmt.logo} alt="" className="w-4 h-4 object-contain" />
+                      <img src={fmt.logo} alt={`${formatId} logo`} className="w-4 h-4 object-contain" />
                     ) : (
                       <Maximize2 className={`w-3.5 h-3.5 ${count > 0 ? 'text-white' : 'text-zinc-400'}`} />
                     )}

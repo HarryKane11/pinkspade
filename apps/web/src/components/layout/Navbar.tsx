@@ -56,7 +56,7 @@ export function Navbar({ onStartSetup }: NavbarProps) {
           setCreditPlan(data.plan);
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.error('Failed to fetch credit balance:', err); });
     return () => { cancelled = true; };
   }, [user]);
 
@@ -140,6 +140,8 @@ export function Navbar({ onStartSetup }: NavbarProps) {
                 <button
                   onClick={() => setShowUserDropdown((v) => !v)}
                   className="flex items-center gap-1.5 cursor-pointer"
+                  aria-label="User menu"
+                  aria-expanded={showUserDropdown}
                 >
                   {user.user_metadata?.avatar_url ? (
                     <img

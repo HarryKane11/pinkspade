@@ -322,6 +322,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
     <aside className="w-80 bg-white border-r border-zinc-200 flex flex-col flex-shrink-0 z-10 overflow-y-auto">
       <input
         ref={fileInputRef}
+        id="product-image-upload"
         type="file"
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
@@ -358,7 +359,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
       <div className="flex-1 p-4 flex flex-col gap-5">
         {/* Product Image Upload (top priority) */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-zinc-700">Subject / Product Image</label>
+          <label htmlFor="product-image-upload" className="text-xs font-medium text-zinc-700">Subject / Product Image</label>
           {uploadedImage ? (
             <div className="relative rounded-xl border border-zinc-200 overflow-hidden bg-zinc-50 group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -368,10 +369,10 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
                 className="w-full h-32 object-contain bg-white"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                <button onClick={handleReplaceImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Replace">
+                <button onClick={handleReplaceImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Replace" aria-label="Replace image">
                   <RotateCcw className="w-4 h-4 text-zinc-700" />
                 </button>
-                <button onClick={handleRemoveImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Remove">
+                <button onClick={handleRemoveImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Remove" aria-label="Remove image">
                   <X className="w-4 h-4 text-red-500" />
                 </button>
               </div>
@@ -395,8 +396,9 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
 
         {/* Product Name */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-zinc-700">Product Name</label>
+          <label htmlFor="product-name" className="text-xs font-medium text-zinc-700">Product Name</label>
           <input
+            id="product-name"
             type="text"
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
@@ -493,7 +495,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
                   {/* Channel logo */}
                   {fmt.logo ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={fmt.logo} alt="" className="w-5 h-5 rounded object-contain flex-shrink-0" />
+                    <img src={fmt.logo} alt={`${fmt.channelId} logo`} className="w-5 h-5 rounded object-contain flex-shrink-0" />
                   ) : (
                     <div className="w-5 h-5 rounded bg-zinc-200 flex items-center justify-center flex-shrink-0">
                       <span className="text-[8px] text-zinc-500">C</span>
@@ -552,6 +554,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
                   <button
                     onClick={() => removeChannel(fmt.channelId)}
                     className="p-0.5 rounded text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                    aria-label={`Remove ${fmt.channelId} channel`}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -580,7 +583,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
                   >
                     {cat.logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={cat.logo} alt="" className="w-5 h-5 rounded object-contain" />
+                      <img src={cat.logo} alt={`${cat.nameEn} logo`} className="w-5 h-5 rounded object-contain" />
                     ) : (
                       <div className="w-5 h-5 rounded bg-zinc-200" />
                     )}
@@ -636,7 +639,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
         {/* Creative Prompt */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-zinc-700 flex items-center gap-1.5">
+            <label htmlFor="creative-prompt" className="text-xs font-medium text-zinc-700 flex items-center gap-1.5">
               <Wand2 className="w-3.5 h-3.5 text-amber-500" />
               Creative Prompt
             </label>
@@ -646,6 +649,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
             </span>
           </div>
           <textarea
+            id="creative-prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-xs text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none resize-none h-20 transition-all placeholder:text-zinc-400"

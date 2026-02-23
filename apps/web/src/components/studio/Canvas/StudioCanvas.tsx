@@ -3,7 +3,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { Stage, Layer, Rect } from 'react-konva';
 import type Konva from 'konva';
-import { useStudio, useStudioActions } from '@/contexts/studio-context';
+import { useStudio, useStudioActions, useStudioStore } from '@/contexts/studio-context';
 import { BackgroundLayerComponent } from './layers/BackgroundLayer';
 import { TextLayerComponent } from './layers/TextLayer';
 import { ImageLayerComponent } from './layers/ImageLayer';
@@ -34,6 +34,7 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
   const internalStageRef = useRef<Konva.Stage>(null);
   const stageRef = externalStageRef ?? internalStageRef;
 
+  const store = useStudioStore();
   const design = useStudio((s) => s.design);
   const viewport = useStudio((s) => s.viewport);
   const selection = useStudio((s) => s.selection);
@@ -72,13 +73,16 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
     return () => resizeObserver.disconnect();
   }, [containerRef, design, fitToCanvas]);
 
-  // Convert screen pointer to canvas coordinates
+  // Convert screen pointer to canvas coordinates — reads viewport from store to avoid callback churn
   const pointerToCanvas = useCallback(
-    (pointer: { x: number; y: number }) => ({
-      x: (pointer.x - viewport.offsetX) / viewport.zoom,
-      y: (pointer.y - viewport.offsetY) / viewport.zoom,
-    }),
-    [viewport]
+    (pointer: { x: number; y: number }) => {
+      const vp = store.getState().viewport;
+      return {
+        x: (pointer.x - vp.offsetX) / vp.zoom,
+        y: (pointer.y - vp.offsetY) / vp.zoom,
+      };
+    },
+    [store]
   );
 
   // Handle stage click: create layers for text/shape tools, deselect otherwise
@@ -157,27 +161,26 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
 
   const handleMouseMove = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (!selectionRect?.visible) return;
+      // Use the callback form of setSelectionRect to check visibility without depending on it
+      setSelectionRect((prev) => {
+        if (!prev?.visible) return prev;
 
-      const stage = e.target.getStage();
-      const pointer = stage?.getPointerPosition();
-      if (!pointer) return;
+        const stage = e.target.getStage();
+        const pointer = stage?.getPointerPosition();
+        if (!pointer) return prev;
 
-      const { x, y } = pointerToCanvas(pointer);
+        const { x, y } = pointerToCanvas(pointer);
 
-      setSelectionRect((prev) =>
-        prev
-          ? {
-              ...prev,
-              x: Math.min(prev.startX, x),
-              y: Math.min(prev.startY, y),
-              width: Math.abs(x - prev.startX),
-              height: Math.abs(y - prev.startY),
-            }
-          : null
-      );
+        return {
+          ...prev,
+          x: Math.min(prev.startX, x),
+          y: Math.min(prev.startY, y),
+          width: Math.abs(x - prev.startX),
+          height: Math.abs(y - prev.startY),
+        };
+      });
     },
-    [selectionRect?.visible, pointerToCanvas]
+    [pointerToCanvas]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -225,6 +228,7 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
   );
 
   // Handle wheel: Ctrl+wheel = zoom, regular wheel = pan
+  // Reads viewport from store at call time for stable callback identity during pan/zoom
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
@@ -232,15 +236,17 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
       const stage = stageRef.current;
       if (!stage) return;
 
+      const vp = store.getState().viewport;
+
       // Ctrl+Wheel or Meta+Wheel: Zoom towards cursor
       if (e.evt.ctrlKey || e.evt.metaKey) {
-        const oldScale = viewport.zoom;
+        const oldScale = vp.zoom;
         const pointer = stage.getPointerPosition();
         if (!pointer) return;
 
         const mousePointTo = {
-          x: (pointer.x - viewport.offsetX) / oldScale,
-          y: (pointer.y - viewport.offsetY) / oldScale,
+          x: (pointer.x - vp.offsetX) / oldScale,
+          y: (pointer.y - vp.offsetY) / oldScale,
         };
 
         const scaleBy = 1.1;
@@ -259,9 +265,9 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
       }
 
       // Regular wheel: Pan the canvas
-      setOffset(viewport.offsetX - e.evt.deltaX, viewport.offsetY - e.evt.deltaY);
+      setOffset(vp.offsetX - e.evt.deltaX, vp.offsetY - e.evt.deltaY);
     },
-    [viewport, setOffset, setZoom]
+    [store, stageRef, setOffset, setZoom]
   );
 
   // Layer selection handler

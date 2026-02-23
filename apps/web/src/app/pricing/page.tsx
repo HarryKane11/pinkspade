@@ -105,6 +105,7 @@ const PLANS: Plan[] = [
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleCheckout = useCallback(async (plan: Plan) => {
@@ -121,6 +122,7 @@ export default function PricingPage() {
     }
 
     setLoadingPlan(plan.id);
+    setCheckoutError(null);
     try {
       const planId = isYearly ? plan.checkoutId.yearly : plan.checkoutId.monthly;
       const res = await fetch('/api/checkout', {
@@ -141,8 +143,11 @@ export default function PricingPage() {
         router.push('/login?next=/pricing');
         return;
       }
+
+      setCheckoutError('Checkout failed. Please try again.');
     } catch (err) {
       console.error('Checkout error:', err);
+      setCheckoutError('Network error. Please check your connection and try again.');
     } finally {
       setLoadingPlan(null);
     }
@@ -173,6 +178,9 @@ export default function PricingPage() {
             className={`relative w-12 h-6 rounded-full transition-colors ${
               isYearly ? 'bg-zinc-900' : 'bg-zinc-200'
             }`}
+            role="switch"
+            aria-checked={isYearly}
+            aria-label="Toggle annual billing"
           >
             <div
               className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${
@@ -189,6 +197,18 @@ export default function PricingPage() {
             </span>
           )}
         </div>
+
+        {checkoutError && (
+          <div className="max-w-md mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+            <p className="text-sm font-medium text-red-900">{checkoutError}</p>
+            <button
+              onClick={() => setCheckoutError(null)}
+              className="text-xs text-red-600 hover:text-red-800 font-medium mt-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl w-full">
           {PLANS.map((plan) => {

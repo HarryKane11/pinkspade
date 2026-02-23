@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useRef, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useRef, useMemo, useCallback, type ReactNode } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { immer } from 'zustand/middleware/immer';
@@ -440,10 +440,14 @@ export function useStudio<T>(selector: (state: StudioStore) => T): T {
     throw new Error('useStudio must be used within a StudioProvider');
   }
 
-  // Memoize the selector to prevent infinite loops with useSyncExternalStore
-  const memoizedSelector = useMemo(() => selector, []);
+  // Keep selector ref current to avoid stale closures while maintaining stable identity
+  const selectorRef = useRef(selector);
+  selectorRef.current = selector;
 
-  return useStore(store, memoizedSelector);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableSelector = useCallback((s: StudioStore) => selectorRef.current(s), []);
+
+  return useStore(store, stableSelector);
 }
 
 // Convenience hooks
@@ -496,36 +500,40 @@ export function useStudioActions() {
     throw new Error('useStudioActions must be used within a StudioProvider');
   }
 
-  // Get actions directly from the store state (stable references)
-  const state = store.getState();
-  return {
-    loadDesign: state.loadDesign,
-    updateDesign: state.updateDesign,
-    markSaved: state.markSaved,
-    addLayer: state.addLayer,
-    updateLayer: state.updateLayer,
-    removeLayer: state.removeLayer,
-    reorderLayers: state.reorderLayers,
-    duplicateLayer: state.duplicateLayer,
-    selectLayer: state.selectLayer,
-    selectLayers: state.selectLayers,
-    deselectAll: state.deselectAll,
-    setHoveredLayer: state.setHoveredLayer,
-    setEditingLayer: state.setEditingLayer,
-    setZoom: state.setZoom,
-    setOffset: state.setOffset,
-    resetViewport: state.resetViewport,
-    fitToCanvas: state.fitToCanvas,
-    undo: state.undo,
-    redo: state.redo,
-    canUndo: state.canUndo,
-    canRedo: state.canRedo,
-    copyLayers: state.copyLayers,
-    pasteLayers: state.pasteLayers,
-    cutLayers: state.cutLayers,
-    setActiveTool: state.setActiveTool,
-    updateCanvas: state.updateCanvas,
-    setLoading: state.setLoading,
-    setError: state.setError,
-  };
+  // Zustand+Immer action functions are stable across renders (same reference),
+  // so memoizing on `store` gives a stable returned object.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => {
+    const state = store.getState();
+    return {
+      loadDesign: state.loadDesign,
+      updateDesign: state.updateDesign,
+      markSaved: state.markSaved,
+      addLayer: state.addLayer,
+      updateLayer: state.updateLayer,
+      removeLayer: state.removeLayer,
+      reorderLayers: state.reorderLayers,
+      duplicateLayer: state.duplicateLayer,
+      selectLayer: state.selectLayer,
+      selectLayers: state.selectLayers,
+      deselectAll: state.deselectAll,
+      setHoveredLayer: state.setHoveredLayer,
+      setEditingLayer: state.setEditingLayer,
+      setZoom: state.setZoom,
+      setOffset: state.setOffset,
+      resetViewport: state.resetViewport,
+      fitToCanvas: state.fitToCanvas,
+      undo: state.undo,
+      redo: state.redo,
+      canUndo: state.canUndo,
+      canRedo: state.canRedo,
+      copyLayers: state.copyLayers,
+      pasteLayers: state.pasteLayers,
+      cutLayers: state.cutLayers,
+      setActiveTool: state.setActiveTool,
+      updateCanvas: state.updateCanvas,
+      setLoading: state.setLoading,
+      setError: state.setError,
+    };
+  }, [store]);
 }

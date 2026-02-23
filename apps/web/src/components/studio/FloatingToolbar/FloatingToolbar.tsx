@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStudio, useStudioActions } from '@/contexts/studio-context';
 import { getLatestBrand } from '@/lib/brand-storage';
 import type { TextLayer, ShapeLayer } from '@/lib/shared';
@@ -70,14 +70,65 @@ export function FloatingToolbar() {
     return () => document.removeEventListener('mousedown', handle);
   }, [fontOpen]);
 
-  if (!design || selection.selectedLayerIds.length !== 1) return null;
+  // Build color palette from brand (deduplicated) — memoized to avoid recomputing on viewport pan/zoom
+  const paletteColors = useMemo(() => {
+    const colors: string[] = [];
+    const addUnique = (c: string | undefined) => { if (c && !colors.includes(c)) colors.push(c); };
+    addUnique(brandColors.primary);
+    addUnique(brandColors.secondary);
+    addUnique(brandColors.accent);
+    addUnique(brandColors.text);
+    addUnique(brandColors.background);
+    if (brandColors.palette) {
+      for (const c of brandColors.palette.slice(0, 3)) {
+        if (!colors.includes(c)) colors.push(c);
+      }
+    }
+    const defaultColors = ['#18181b', '#ffffff', '#ef4444', '#3b82f6', '#22c55e', '#f59e0b'];
+    for (const c of defaultColors) {
+      if (!colors.includes(c)) colors.push(c);
+      if (colors.length >= 10) break;
+    }
+    return colors;
+  }, [brandColors]);
 
-  const selectedId = selection.selectedLayerIds[0];
-  const selectedLayer = design.layers.find((l) => l.id === selectedId);
-  if (!selectedLayer) return null;
+  // Brand fonts — memoized
+  const fontChoices = useMemo(() => {
+    const fonts: string[] = [];
+    if (brandFonts.heading) fonts.push(brandFonts.heading);
+    if (brandFonts.body && brandFonts.body !== brandFonts.heading) fonts.push(brandFonts.body);
+    const defaultFonts = ['Pretendard', 'Inter', 'Noto Sans KR', 'Playfair Display', 'Roboto'];
+    for (const f of defaultFonts) {
+      if (!fonts.includes(f)) fonts.push(f);
+      if (fonts.length >= 7) break;
+    }
+    return fonts;
+  }, [brandFonts]);
 
-  const isText = selectedLayer.type === 'text';
-  const isShape = selectedLayer.type === 'shape';
+  // Derive selected layer info
+  const selectedId = selection.selectedLayerIds.length === 1 ? selection.selectedLayerIds[0] : null;
+  const selectedLayer = selectedId && design ? design.layers.find((l) => l.id === selectedId) : null;
+  const isText = selectedLayer?.type === 'text';
+  const isShape = selectedLayer?.type === 'shape';
+
+  const handleColorChange = useCallback((color: string) => {
+    if (!selectedId) return;
+    if (isText) {
+      updateLayer(selectedId, { color });
+    } else {
+      updateLayer(selectedId, { fill: color });
+    }
+  }, [isText, selectedId, updateLayer]);
+
+  const handleFontChange = useCallback((family: string) => {
+    if (!selectedId) return;
+    loadGoogleFont(family);
+    updateLayer(selectedId, { fontFamily: family });
+    setFontOpen(false);
+  }, [selectedId, updateLayer]);
+
+  // Early returns AFTER all hooks
+  if (!design || !selectedLayer || !selectedId) return null;
   if (!isText && !isShape) return null;
 
   // Calculate position: above the selected element, offset to the right
@@ -93,50 +144,6 @@ export function FloatingToolbar() {
     : (selectedLayer as ShapeLayer).fill ?? '#000000';
 
   const currentFont = isText ? (selectedLayer as TextLayer).fontFamily : null;
-
-  // Build color palette from brand (deduplicated)
-  const paletteColors: string[] = [];
-  const addUnique = (c: string | undefined) => { if (c && !paletteColors.includes(c)) paletteColors.push(c); };
-  addUnique(brandColors.primary);
-  addUnique(brandColors.secondary);
-  addUnique(brandColors.accent);
-  addUnique(brandColors.text);
-  addUnique(brandColors.background);
-  if (brandColors.palette) {
-    for (const c of brandColors.palette.slice(0, 3)) {
-      if (!paletteColors.includes(c)) paletteColors.push(c);
-    }
-  }
-  // Add common defaults (deduplicated)
-  const defaultColors = ['#18181b', '#ffffff', '#ef4444', '#3b82f6', '#22c55e', '#f59e0b'];
-  for (const c of defaultColors) {
-    if (!paletteColors.includes(c)) paletteColors.push(c);
-    if (paletteColors.length >= 10) break;
-  }
-
-  // Brand fonts
-  const fontChoices: string[] = [];
-  if (brandFonts.heading) fontChoices.push(brandFonts.heading);
-  if (brandFonts.body && brandFonts.body !== brandFonts.heading) fontChoices.push(brandFonts.body);
-  const defaultFonts = ['Pretendard', 'Inter', 'Noto Sans KR', 'Playfair Display', 'Roboto'];
-  for (const f of defaultFonts) {
-    if (!fontChoices.includes(f)) fontChoices.push(f);
-    if (fontChoices.length >= 7) break;
-  }
-
-  const handleColorChange = (color: string) => {
-    if (isText) {
-      updateLayer(selectedId, { color });
-    } else {
-      updateLayer(selectedId, { fill: color });
-    }
-  };
-
-  const handleFontChange = (family: string) => {
-    loadGoogleFont(family);
-    updateLayer(selectedId, { fontFamily: family });
-    setFontOpen(false);
-  };
 
   return (
     <div

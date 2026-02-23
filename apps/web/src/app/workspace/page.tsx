@@ -225,6 +225,7 @@ export default function WorkspacePage() {
                           onClick={(e) => handleRemoveBrand(e, brand.id)}
                           className="p-1.5 rounded-md text-zinc-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
                           title="Delete brand"
+                          aria-label={`Delete ${brand.brandName}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -375,6 +376,7 @@ export default function WorkspacePage() {
                                               onClick={(e) => handleRemoveDesign(e, entry.id)}
                                               className="absolute top-1 right-1 p-1 rounded bg-black/40 text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/60 transition-all"
                                               title="Remove from history"
+                                              aria-label={`Remove ${entry.label} from history`}
                                             >
                                               <Trash2 className="w-3 h-3" />
                                             </button>
@@ -422,6 +424,7 @@ export default function WorkspacePage() {
             <button
               onClick={() => setPreviewImage(null)}
               className="absolute -top-3 -right-3 p-1.5 bg-white rounded-full shadow-lg text-zinc-600 hover:text-zinc-900 transition-colors z-10"
+              aria-label="Close preview"
             >
               <X className="w-4 h-4" />
             </button>

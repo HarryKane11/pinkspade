@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useStudio } from '@/contexts/studio-context';
+import { useStudio, useStudioStore } from '@/contexts/studio-context';
 
 interface UseAutoSaveOptions {
   interval?: number; // Save interval in ms (default: 10000)
@@ -10,15 +10,17 @@ interface UseAutoSaveOptions {
 }
 
 export function useAutoSave({ interval = 10000, onSave, onError }: UseAutoSaveOptions) {
-  const design = useStudio((s) => s.design);
+  const store = useStudioStore();
   const isDirty = useStudio((s) => s.isDirty);
-  const markSaved = useStudio((s) => s.markSaved);
 
   const lastSaveRef = useRef<string | null>(null);
   const isSavingRef = useRef(false);
 
+  // Read design/isDirty from store at call time so the callback has a stable identity
+  // and doesn't reset the setInterval on every keystroke.
   const save = useCallback(async () => {
-    if (!design || !isDirty || isSavingRef.current) return;
+    const { design, isDirty: dirty, markSaved } = store.getState();
+    if (!design || !dirty || isSavingRef.current) return;
 
     const designJson = JSON.stringify(design);
 
@@ -35,9 +37,9 @@ export function useAutoSave({ interval = 10000, onSave, onError }: UseAutoSaveOp
     } finally {
       isSavingRef.current = false;
     }
-  }, [design, isDirty, onSave, onError, markSaved]);
+  }, [store, onSave, onError]);
 
-  // Auto-save on interval
+  // Auto-save on interval — save has stable identity, so interval never resets during edits
   useEffect(() => {
     const timer = setInterval(() => {
       save();
@@ -49,19 +51,20 @@ export function useAutoSave({ interval = 10000, onSave, onError }: UseAutoSaveOp
   // Save on unmount if dirty
   useEffect(() => {
     return () => {
-      if (isDirty && design) {
-        // Fire-and-forget save on unmount
+      const { design, isDirty: dirty } = store.getState();
+      if (dirty && design) {
         onSave(design.meta.id, JSON.stringify(design)).catch(() => {
           // Ignore errors on unmount
         });
       }
     };
-  }, [isDirty, design, onSave]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store, onSave]);
 
   // Save on page unload
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
+      if (store.getState().isDirty) {
         e.preventDefault();
         e.returnValue = '저장되지 않은 변경사항이 있습니다.';
         return e.returnValue;
@@ -70,7 +73,7 @@ export function useAutoSave({ interval = 10000, onSave, onError }: UseAutoSaveOp
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
+  }, [store]);
 
   return {
     save,

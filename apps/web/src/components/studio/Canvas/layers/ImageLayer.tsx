@@ -21,6 +21,15 @@ export function ImageLayerComponent({
 }: ImageLayerComponentProps) {
   const [image, status] = useImage(layer.imageUrl, 'anonymous');
 
+  // Stable clipFunc reference to avoid Konva redraws
+  const clipFn = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (ctx: any) => {
+      ctx.rect(0, 0, layer.size.width, layer.size.height);
+    },
+    [layer.size.width, layer.size.height]
+  );
+
   const handleDragEnd = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
       onTransform({
@@ -176,9 +185,7 @@ export function ImageLayerComponent({
       onTap={onSelect}
       onDragEnd={handleDragEnd}
       onTransformEnd={handleTransformEnd}
-      clipFunc={(ctx) => {
-        ctx.rect(0, 0, layer.size.width, layer.size.height);
-      }}
+      clipFunc={clipFn}
     >
       {/* Selection border */}
       <Rect

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { Text, Group, Rect } from 'react-konva';
 import type Konva from 'konva';
 import type { TextLayer } from '@/lib/shared';
@@ -28,8 +28,13 @@ export function TextLayerComponent({
   const { setEditingLayer, updateLayer } = useStudioActions();
   const { calculateAutoFit } = useAutoFitText();
 
-  // Calculate auto-fit font size
-  const autoFitResult = calculateAutoFit(layer);
+  // Calculate auto-fit font size — memoized to avoid expensive Canvas2D measurements on every render
+  const autoFitResult = useMemo(
+    () => calculateAutoFit(layer),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [layer.content, layer.fontFamily, layer.fontWeight, layer.fontSize, layer.lineHeight,
+     layer.size.width, layer.size.height, layer.autoFit, calculateAutoFit]
+  );
   const displayFontSize = layer.autoFit ? autoFitResult.fontSize : layer.fontSize;
 
   // Update overflow warning
@@ -189,7 +194,9 @@ export function TextLayerComponent({
   }, [
     isEditing,
     textareaPosition,
-    layer,
+    layer.content, layer.size.width, layer.size.height,
+    layer.fontFamily, layer.fontWeight, layer.color,
+    layer.textAlign, layer.lineHeight, layer.letterSpacing,
     displayFontSize,
     handleTextChange,
     setEditingLayer,

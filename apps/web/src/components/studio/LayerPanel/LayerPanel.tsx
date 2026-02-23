@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   Layers,
   Eye,
@@ -68,6 +68,11 @@ export function LayerPanel() {
     [updateLayer]
   );
 
+  const displayLayers = useMemo(
+    () => design ? [...design.layers].reverse() : [],
+    [design]
+  );
+
   if (!design) {
     return (
       <div className="p-4 text-center text-zinc-500 text-sm">
@@ -75,8 +80,6 @@ export function LayerPanel() {
       </div>
     );
   }
-
-  const displayLayers = [...design.layers].reverse();
 
   return (
     <div className="h-full flex flex-col bg-white">

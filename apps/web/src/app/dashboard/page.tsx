@@ -30,6 +30,7 @@ function DashboardContent() {
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [usageData, setUsageData] = useState<UsageData | null>(null);
   const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('checkout') === 'success') {
@@ -54,7 +55,9 @@ function DashboardContent() {
         setBalanceData(balance);
         setUsageData(usage);
         setLoading(false);
-      }).catch(() => {
+      }).catch((err) => {
+        console.error('Failed to fetch dashboard data:', err);
+        setFetchError(true);
         setLoading(false);
       });
     });
@@ -102,6 +105,17 @@ function DashboardContent() {
         <div className="space-y-6 animate-pulse">
           <div className="h-32 bg-zinc-100 rounded-xl" />
           <div className="h-64 bg-zinc-100 rounded-xl" />
+        </div>
+      ) : fetchError ? (
+        <div className="border border-red-200 bg-red-50 rounded-xl p-8 text-center">
+          <p className="text-sm font-medium text-red-900 mb-1">Failed to load dashboard data</p>
+          <p className="text-xs text-red-700 mb-4">Please check your connection and try again.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs font-medium bg-red-600 text-white px-4 py-2 rounded-full hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       ) : (
         <div className="space-y-6">

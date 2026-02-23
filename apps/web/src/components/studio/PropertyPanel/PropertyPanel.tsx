@@ -281,7 +281,7 @@ export function PropertyPanel() {
                   <a href="/pricing" className="text-[10px] text-red-600 underline mt-1 inline-block">Upgrade</a>
                 )}
               </div>
-              <button onClick={() => setCopyError(null)} className="text-red-300 hover:text-red-500">
+              <button onClick={() => setCopyError(null)} className="text-red-300 hover:text-red-500" aria-label="Dismiss error">
                 <X className="w-3 h-3" />
               </button>
             </div>
@@ -295,6 +295,7 @@ export function PropertyPanel() {
                 <button
                   onClick={() => setGeneratedCopies(null)}
                   className="text-zinc-400 hover:text-zinc-600 transition-colors"
+                  aria-label="Dismiss generated copies"
                 >
                   <X className="w-3 h-3" />
                 </button>

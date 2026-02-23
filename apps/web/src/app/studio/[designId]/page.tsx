@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { X, LayoutGrid } from 'lucide-react';
@@ -125,6 +125,7 @@ function StudioContent() {
   const [campaignFormats, setCampaignFormats] = useState<CampaignFormat[]>([]);
   const [activeFormatTab, setActiveFormatTab] = useState<string>('all');
   const [formatSnapshots, setFormatSnapshots] = useState<Map<string, string>>(new Map());
+  const hasCheckedFormats = useMemo(() => campaignFormats.some((f) => f.checked), [campaignFormats]);
 
   const { loadDesign, updateCanvas, fitToCanvas } = useStudioActions();
   const storeDesign = useStudio((s) => s.design);
@@ -454,7 +455,7 @@ function StudioContent() {
 
         {/* Inner sidebar — Generated Results (shows selected channels even before generation) */}
         <ResultsPanel
-          visible={campaignFormats.some((f) => f.checked) || hasGeneratedResults}
+          visible={hasCheckedFormats || hasGeneratedResults}
           generatedAssets={generatedAssets}
           selectedFormats={campaignFormats}
           onPreviewAsset={setPreviewAsset}
@@ -463,7 +464,7 @@ function StudioContent() {
         {/* Canvas area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Format tab bar — shows when formats are selected */}
-          {campaignFormats.some((f) => f.checked) && (
+          {hasCheckedFormats && (
             <div className="flex items-center gap-1 px-3 py-1.5 border-b border-zinc-200 bg-white flex-shrink-0">
               <button
                 onClick={() => handleFormatTabChange('all')}
@@ -490,7 +491,7 @@ function StudioContent() {
                 >
                   {fmt.logo && (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={fmt.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-sm" />
+                    <img src={fmt.logo} alt={`${fmt.channelId} logo`} className="w-3.5 h-3.5 object-contain rounded-sm" />
                   )}
                   {fmt.label}
                   <span className="text-[9px] font-mono text-zinc-400">
@@ -502,7 +503,7 @@ function StudioContent() {
           )}
 
           {/* Canvas or All Formats View */}
-          {activeFormatTab === 'all' && campaignFormats.some((f) => f.checked) ? (
+          {activeFormatTab === 'all' && hasCheckedFormats ? (
             <AllFormatsView
               formats={campaignFormats}
               snapshots={formatSnapshots}
