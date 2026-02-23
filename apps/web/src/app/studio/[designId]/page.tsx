@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { X } from 'lucide-react';
+import { X, Image as ImageIcon, Smartphone, Monitor, Maximize2, LayoutGrid } from 'lucide-react';
 import { StudioProvider, useStudioActions, useStudio } from '@/contexts/studio-context';
 import { StudioToolbar } from '@/components/studio/Toolbar/StudioToolbar';
-import { AssetGeneratorPanel, type GeneratedAsset } from '@/components/studio/AssetGenerator/AssetGeneratorPanel';
+import { AssetGeneratorPanel, type GeneratedAsset, type CampaignFormat } from '@/components/studio/AssetGenerator/AssetGeneratorPanel';
 import { ResultsPanel } from '@/components/studio/ResultsPanel/ResultsPanel';
 import { useStudioKeyboard } from '@/hooks/useStudioKeyboard';
 import { cn } from '@/lib/utils';
@@ -36,7 +36,14 @@ import { FloatingToolbar } from '@/components/studio/FloatingToolbar/FloatingToo
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { getLatestBrand } from '@/lib/brand-storage';
 import { saveDesignsToHistory, type DesignHistoryEntry } from '@/lib/design-history';
-import type { DesignJSON, TextLayer } from '@/lib/shared';
+import type { DesignJSON, TextLayer, BackgroundLayer } from '@/lib/shared';
+
+const FORMAT_SIZES: Record<string, { width: number; height: number; label: string; icon: React.ReactNode }> = {
+  feed: { width: 1080, height: 1080, label: 'Feed 1:1', icon: <ImageIcon className="w-3 h-3" /> },
+  story: { width: 1080, height: 1920, label: 'Story 9:16', icon: <Smartphone className="w-3 h-3" /> },
+  banner: { width: 1920, height: 1080, label: 'Banner 16:9', icon: <Monitor className="w-3 h-3" /> },
+  custom: { width: 1080, height: 1080, label: 'Custom', icon: <Maximize2 className="w-3 h-3" /> },
+};
 
 // Demo design for testing
 function createDemoDesign(): DesignJSON {
@@ -116,44 +123,6 @@ function createDemoDesign(): DesignJSON {
         brandLocked: false,
         overflow: false,
       },
-      {
-        id: crypto.randomUUID(),
-        name: 'CTA Button',
-        type: 'shape',
-        visible: true,
-        locked: false,
-        opacity: 1,
-        position: { x: 390, y: 800 },
-        size: { width: 300, height: 60 },
-        shapeType: 'rectangle',
-        fill: '#18181b',
-        cornerRadius: 30,
-        strokeWidth: 0,
-      },
-      {
-        id: crypto.randomUUID(),
-        name: 'CTA Text',
-        type: 'text',
-        visible: true,
-        locked: false,
-        opacity: 1,
-        position: { x: 390, y: 800 },
-        size: { width: 300, height: 60 },
-        content: 'Call to Action',
-        fontFamily: 'Pretendard',
-        fontSize: 20,
-        fontWeight: 600,
-        fontStyle: 'normal',
-        color: '#ffffff',
-        textAlign: 'center',
-        verticalAlign: 'middle',
-        lineHeight: 1,
-        letterSpacing: 0,
-        textDecoration: 'none',
-        autoFit: false,
-        brandLocked: false,
-        overflow: false,
-      },
     ],
     brandLocks: [],
   };
@@ -172,8 +141,10 @@ function StudioContent() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [rightTab, setRightTab] = useState<'design' | 'layers' | 'brand'>('design');
   const [previewAsset, setPreviewAsset] = useState<GeneratedAsset | null>(null);
+  const [campaignFormats, setCampaignFormats] = useState<CampaignFormat[]>([]);
+  const [activeFormatTab, setActiveFormatTab] = useState<string>('all');
 
-  const { loadDesign } = useStudioActions();
+  const { loadDesign, updateCanvas, updateLayer, fitToCanvas } = useStudioActions();
   const storeDesign = useStudio((s) => s.design);
   const isLoading = useStudio((s) => s.isLoading);
   const error = useStudio((s) => s.error);
@@ -238,18 +209,7 @@ function StudioContent() {
             tl.color = textColor;
           } else if (tl.name === 'Description') {
             tl.color = colors.secondary || textColor;
-          } else if (tl.name === 'CTA Text') {
-            // CTA text stays contrasting to CTA button
-            tl.color = colors.background || '#ffffff';
           }
-        }
-      }
-
-      // Apply brand accent to CTA button
-      if (colors.primary || colors.accent) {
-        const ctaShape = design.layers.find((l) => l.name === 'CTA Button');
-        if (ctaShape && 'fill' in ctaShape) {
-          (ctaShape as { fill: string }).fill = colors.accent || colors.primary || '#18181b';
         }
       }
 
@@ -260,7 +220,7 @@ function StudioContent() {
         for (const layer of design.layers) {
           if (layer.type === 'text' && 'fontFamily' in layer) {
             const tl = layer as TextLayer;
-            if (tl.name === 'Headline' || tl.name === 'CTA Text') {
+            if (tl.name === 'Headline') {
               if (headingFont) tl.fontFamily = headingFont;
             } else {
               if (bodyFont) tl.fontFamily = bodyFont;
@@ -350,6 +310,9 @@ function StudioContent() {
       stage.x(0);
       stage.y(0);
 
+      // Force a synchronous redraw so the capture reflects current state
+      stage.batchDraw();
+
       const dataUrl = stage.toDataURL({ x: 0, y: 0, width, height, pixelRatio: 1 });
 
       // Restore original viewport
@@ -363,6 +326,29 @@ function StudioContent() {
       return null;
     }
   }, [storeDesign]);
+
+  const handleFormatTabChange = useCallback((formatId: string) => {
+    setActiveFormatTab(formatId);
+    if (formatId === 'all' || !FORMAT_SIZES[formatId]) return;
+
+    const { width, height } = FORMAT_SIZES[formatId];
+    updateCanvas({ width, height });
+
+    // Also update background layer to match
+    if (storeDesign) {
+      const bgLayer = storeDesign.layers.find((l) => l.type === 'background') as BackgroundLayer | undefined;
+      if (bgLayer) {
+        updateLayer(bgLayer.id, { size: { width, height } });
+      }
+    }
+
+    // Re-fit canvas to container
+    const container = containerRef.current;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      setTimeout(() => fitToCanvas(rect.width, rect.height), 50);
+    }
+  }, [updateCanvas, updateLayer, fitToCanvas, storeDesign, containerRef]);
 
   const handleShare = useCallback(async () => {
     if (!storeDesign || !stageRef.current) return;
@@ -468,13 +454,61 @@ function StudioContent() {
       {/* Main workspace */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left sidebar — Asset Generator */}
-        <AssetGeneratorPanel onGenerate={handleGenerate} onResults={handleGenerationResults} isGenerating={isGenerating} onCaptureCanvas={captureCanvas} />
+        <AssetGeneratorPanel onGenerate={handleGenerate} onResults={handleGenerationResults} isGenerating={isGenerating} onCaptureCanvas={captureCanvas} onFormatsChange={setCampaignFormats} />
 
-        {/* Inner sidebar — Generated Results (only after generation) */}
-        <ResultsPanel visible={hasGeneratedResults} generatedAssets={generatedAssets} onPreviewAsset={setPreviewAsset} />
+        {/* Inner sidebar — Generated Results (shows selected channels even before generation) */}
+        <ResultsPanel
+          visible={campaignFormats.some((f) => f.checked) || hasGeneratedResults}
+          generatedAssets={generatedAssets}
+          selectedFormats={campaignFormats}
+          onPreviewAsset={setPreviewAsset}
+        />
 
         {/* Canvas area */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Format tab bar — shows when formats are selected */}
+          {campaignFormats.some((f) => f.checked) && (
+            <div className="flex items-center gap-1 px-3 py-1.5 border-b border-zinc-200 bg-white flex-shrink-0">
+              <button
+                onClick={() => handleFormatTabChange('all')}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
+                  activeFormatTab === 'all'
+                    ? 'bg-zinc-900 text-white shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+                )}
+              >
+                <LayoutGrid className="w-3 h-3" />
+                All
+              </button>
+              {campaignFormats.filter((f) => f.checked).map((fmt) => {
+                const config = FORMAT_SIZES[fmt.id];
+                if (!config) return null;
+                return (
+                  <button
+                    key={fmt.id}
+                    onClick={() => handleFormatTabChange(fmt.id)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
+                      activeFormatTab === fmt.id
+                        ? 'bg-zinc-900 text-white shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+                    )}
+                  >
+                    {config.icon}
+                    {config.label}
+                    <span className={cn(
+                      'text-[9px] font-mono',
+                      activeFormatTab === fmt.id ? 'text-zinc-400' : 'text-zinc-400'
+                    )}>
+                      {config.width}×{config.height}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Canvas */}
           <div
             ref={containerRef}
