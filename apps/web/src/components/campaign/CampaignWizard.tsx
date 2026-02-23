@@ -8,6 +8,7 @@ import { CampaignStepper } from './CampaignStepper';
 import { Step1Setup } from './Step1Setup';
 import { Step2Creative } from './Step2Creative';
 import { Step3Generate } from './Step3Generate';
+import { Step4Review } from './Step4Review';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -153,7 +154,7 @@ export function CampaignWizard() {
     <Step1Setup key="step1" data={data} update={update} onNext={next} />,
     <Step2Creative key="step2" data={data} update={update} onNext={next} onBack={back} />,
     <Step3Generate key="step3" data={data} update={update} onNext={next} onBack={back} />,
-    <div key="step4" className="text-center text-zinc-400 py-20">Step 4: 검토 & 내보내기 (placeholder)</div>,
+    <Step4Review key="step4" data={data} update={update} onBack={back} onGoToStep={goToStep} />,
   ];
 
   return (
