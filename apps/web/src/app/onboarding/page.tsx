@@ -92,8 +92,12 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      await supabase.from('profiles').update({
+      // Use upsert to handle both existing and missing profile rows
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
         display_name: data.displayName,
+        email: user.email ?? '',
+        avatar_url: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? '',
         onboarding_completed: true,
         onboarding_data: {
           role: data.role,
@@ -103,10 +107,28 @@ export default function OnboardingPage() {
           channels: data.channels,
           goals: data.goals,
         },
-      }).eq('id', user.id)
+      }, { onConflict: 'id' })
+
+      if (error) {
+        console.error('Onboarding save error:', error)
+        // Fallback: try update without onboarding_data in case column doesn't exist
+        const { error: fallbackError } = await supabase.from('profiles').upsert({
+          id: user.id,
+          display_name: data.displayName,
+          email: user.email ?? '',
+          onboarding_completed: true,
+        }, { onConflict: 'id' })
+
+        if (fallbackError) {
+          console.error('Onboarding fallback error:', fallbackError)
+          setSaving(false)
+          return
+        }
+      }
 
       router.push('/workspace')
-    } catch {
+    } catch (err) {
+      console.error('Onboarding complete error:', err)
       setSaving(false)
     }
   }, [data, router])

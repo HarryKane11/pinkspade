@@ -60,14 +60,20 @@ export async function updateSession(request: NextRequest) {
     )
 
     if (isAppRoute) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single()
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single()
 
-      if (profile && !profile.onboarding_completed) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
+        // Only redirect if we got a valid profile with onboarding_completed explicitly false
+        // If query fails or profile doesn't exist, let the user through
+        if (!error && profile && profile.onboarding_completed === false) {
+          return NextResponse.redirect(new URL('/onboarding', request.url))
+        }
+      } catch {
+        // If profiles table doesn't exist or query fails, don't block
       }
     }
   }
