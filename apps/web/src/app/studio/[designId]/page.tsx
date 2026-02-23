@@ -8,6 +8,7 @@ import { StudioProvider, useStudioActions, useStudio } from '@/contexts/studio-c
 import { StudioToolbar } from '@/components/studio/Toolbar/StudioToolbar';
 import { AssetGeneratorPanel, type GeneratedAsset, type CampaignFormat } from '@/components/studio/AssetGenerator/AssetGeneratorPanel';
 import { ResultsPanel } from '@/components/studio/ResultsPanel/ResultsPanel';
+import { AllFormatsView } from '@/components/studio/AllFormatsView/AllFormatsView';
 import { useStudioKeyboard } from '@/hooks/useStudioKeyboard';
 import { cn } from '@/lib/utils';
 
@@ -123,6 +124,7 @@ function StudioContent() {
   const [previewAsset, setPreviewAsset] = useState<GeneratedAsset | null>(null);
   const [campaignFormats, setCampaignFormats] = useState<CampaignFormat[]>([]);
   const [activeFormatTab, setActiveFormatTab] = useState<string>('all');
+  const [formatSnapshots, setFormatSnapshots] = useState<Map<string, string>>(new Map());
 
   const { loadDesign, updateCanvas, fitToCanvas } = useStudioActions();
   const storeDesign = useStudio((s) => s.design);
@@ -304,6 +306,27 @@ function StudioContent() {
   }, [storeDesign]);
 
   const handleFormatTabChange = useCallback((formatId: string) => {
+    // Capture snapshot of current format before switching
+    if (activeFormatTab !== 'all' && stageRef.current && storeDesign) {
+      try {
+        const stage = stageRef.current;
+        const { width, height } = storeDesign.canvas;
+        const oldScale = { x: stage.scaleX(), y: stage.scaleY() };
+        const oldPos = { x: stage.x(), y: stage.y() };
+        stage.scaleX(1);
+        stage.scaleY(1);
+        stage.x(0);
+        stage.y(0);
+        stage.batchDraw();
+        const dataUrl = stage.toDataURL({ x: 0, y: 0, width, height, pixelRatio: 0.5 });
+        stage.scaleX(oldScale.x);
+        stage.scaleY(oldScale.y);
+        stage.x(oldPos.x);
+        stage.y(oldPos.y);
+        setFormatSnapshots((prev) => new Map(prev).set(activeFormatTab, dataUrl));
+      } catch { /* ignore snapshot failure */ }
+    }
+
     setActiveFormatTab(formatId);
     if (formatId === 'all') return;
 
@@ -318,7 +341,7 @@ function StudioContent() {
       const rect = container.getBoundingClientRect();
       setTimeout(() => fitToCanvas(rect.width, rect.height), 50);
     }
-  }, [updateCanvas, fitToCanvas, containerRef, campaignFormats]);
+  }, [updateCanvas, fitToCanvas, containerRef, campaignFormats, activeFormatTab, storeDesign]);
 
   const handleShare = useCallback(async () => {
     if (!storeDesign || !stageRef.current) return;
@@ -475,47 +498,55 @@ function StudioContent() {
             </div>
           )}
 
-          {/* Canvas */}
-          <div
-            ref={containerRef}
-            className="flex-1 bg-zinc-100 overflow-auto flex items-center justify-center relative"
-          >
-            {/* Dot pattern background */}
-            <div
-              className="absolute inset-0 opacity-[0.04] pointer-events-none"
-              style={{
-                backgroundImage: 'radial-gradient(#18181b 1px, transparent 1px)',
-                backgroundSize: '16px 16px',
-              }}
+          {/* Canvas or All Formats View */}
+          {activeFormatTab === 'all' && campaignFormats.some((f) => f.checked) ? (
+            <AllFormatsView
+              formats={campaignFormats}
+              snapshots={formatSnapshots}
+              onSelectFormat={handleFormatTabChange}
             />
-            <StudioCanvas containerRef={containerRef} stageRef={stageRef} />
+          ) : (
+            <div
+              ref={containerRef}
+              className="flex-1 bg-zinc-100 overflow-auto flex items-center justify-center relative"
+            >
+              {/* Dot pattern background */}
+              <div
+                className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                style={{
+                  backgroundImage: 'radial-gradient(#18181b 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
+              />
+              <StudioCanvas containerRef={containerRef} stageRef={stageRef} />
 
-            {/* Floating toolbar on element selection */}
-            <FloatingToolbar />
+              {/* Floating toolbar on element selection */}
+              <FloatingToolbar />
 
-            {/* Loading animation overlay */}
-            {isGenerating && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none bg-white/70 backdrop-blur-sm">
-                <div className="flex flex-col items-center">
-                  <div className="relative w-20 h-20 mb-4">
-                    <div className="absolute inset-0 rounded-full bg-pink-100 animate-ping opacity-30" />
-                    <div className="absolute inset-2 rounded-full bg-pink-50 animate-pulse" />
-                    <img
-                      src="/logo.png"
-                      alt="Loading"
-                      className="absolute inset-0 w-full h-full object-contain p-3 drop-shadow-sm spade-float"
-                    />
+              {/* Loading animation overlay */}
+              {isGenerating && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none bg-white/70 backdrop-blur-sm">
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-20 h-20 mb-4">
+                      <div className="absolute inset-0 rounded-full bg-pink-100 animate-ping opacity-30" />
+                      <div className="absolute inset-2 rounded-full bg-pink-50 animate-pulse" />
+                      <img
+                        src="/logo.png"
+                        alt="Loading"
+                        className="absolute inset-0 w-full h-full object-contain p-3 drop-shadow-sm spade-float"
+                      />
+                    </div>
+                    <p className="text-xs font-medium text-zinc-500">Generating assets...</p>
                   </div>
-                  <p className="text-xs font-medium text-zinc-500">Generating assets...</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Asset preview overlay */}
-            {previewAsset && (
-              <AssetPreviewOverlay asset={previewAsset} onClose={() => setPreviewAsset(null)} />
-            )}
-          </div>
+              {/* Asset preview overlay */}
+              {previewAsset && (
+                <AssetPreviewOverlay asset={previewAsset} onClose={() => setPreviewAsset(null)} />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right sidebar — Property Panel / Layer Panel */}

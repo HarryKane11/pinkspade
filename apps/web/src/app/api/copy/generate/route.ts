@@ -20,12 +20,50 @@ interface CopyRequest {
   productName?: string;
   moods?: string[];
   prompt?: string;
+  userCopyPrompt?: string;
+  channelCategory?: string;
 }
+
+// Channel-specific copywriting guidelines
+const CHANNEL_COPY_GUIDELINES: Record<string, string> = {
+  instagram: `Instagram Copy Guidelines:
+- Keep it SHORT and punchy — headlines 2-5 words, descriptions 1 sentence
+- Use hashtag-friendly language
+- Emoji-friendly but don't overdo it
+- Focus on visual storytelling language
+- CTA should feel casual and engaging (e.g. "링크 확인하기", "지금 바로")`,
+  naver: `Naver Blog/Post Copy Guidelines:
+- Write longer, more informative copy — SEO-optimized
+- Include relevant keywords naturally
+- Formal but approachable tone
+- Descriptions can be 2-3 sentences with key benefits
+- Headlines should be search-friendly and informative`,
+  kakao: `Kakao Copy Guidelines:
+- Conversational and friendly tone (반말 or 존댓말 based on brand)
+- Keep it warm and personal — like chatting with a friend
+- Short punchy lines that work in chat-like contexts
+- Use Korean-friendly expressions and phrasing`,
+  youtube: `YouTube Copy Guidelines:
+- Headlines should provoke curiosity or urgency
+- Use click-worthy language without being clickbait
+- Descriptions should preview the value
+- CTA should drive engagement (구독, 좋아요, 알림 설정)`,
+  coupang: `Coupang/E-commerce Copy Guidelines:
+- Focus on product benefits and features
+- Use persuasive, conversion-focused language
+- Include key selling points concisely
+- CTA should drive purchase intent (지금 구매, 한정 수량)`,
+  facebook: `Facebook Copy Guidelines:
+- Engaging and shareable language
+- Balance between informative and conversational
+- Headlines that stop scrolling
+- Descriptions that drive engagement and shares`,
+};
 
 export async function POST(request: NextRequest) {
   try {
     const body: CopyRequest = await request.json();
-    const { textLayers, brandDna, productName, moods, prompt } = body;
+    const { textLayers, brandDna, productName, moods, prompt, userCopyPrompt, channelCategory } = body;
 
     if (!textLayers || textLayers.length === 0) {
       return NextResponse.json({ error: 'No text layers provided' }, { status: 400 });
@@ -39,6 +77,12 @@ export async function POST(request: NextRequest) {
     if (productName) contextParts.push(`Product: ${productName}`);
     if (moods?.length) contextParts.push(`Creative mood: ${moods.join(', ')}`);
     if (prompt) contextParts.push(`Creative direction: ${prompt}`);
+    if (userCopyPrompt) contextParts.push(`Copy direction from user: ${userCopyPrompt}`);
+
+    // Channel-specific guidelines
+    const channelGuidelines = channelCategory
+      ? CHANNEL_COPY_GUIDELINES[channelCategory] || ''
+      : '';
 
     const layerDescriptions = textLayers.map((l) =>
       `- "${l.name}" (current: "${l.content}")`
@@ -47,6 +91,7 @@ export async function POST(request: NextRequest) {
     const fullPrompt = `You are an expert copywriter for premium marketing campaigns. Generate compelling, concise copy for a design asset.
 
 ${contextParts.length > 0 ? `CONTEXT:\n${contextParts.join('\n')}\n` : ''}
+${channelGuidelines ? `CHANNEL-SPECIFIC GUIDELINES:\n${channelGuidelines}\n` : ''}
 TEXT LAYERS TO FILL:
 ${layerDescriptions}
 

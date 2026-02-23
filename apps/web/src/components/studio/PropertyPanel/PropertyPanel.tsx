@@ -14,6 +14,7 @@ export function PropertyPanel() {
   const [fontSearch, setFontSearch] = useState('');
   const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
   const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
+  const [copyPrompt, setCopyPrompt] = useState('');
 
   // All hooks must be above the early return
   const filteredFonts = useMemo(() => {
@@ -62,6 +63,13 @@ export function PropertyPanel() {
       prompt = sessionStorage.getItem('assetPrompt') || '';
     } catch { /* ignore */ }
 
+    // Get current channel category from sessionStorage
+    let channelCategory = '';
+    try {
+      const fmts = sessionStorage.getItem('activeChannelCategory');
+      if (fmts) channelCategory = fmts;
+    } catch { /* ignore */ }
+
     try {
       const res = await fetch('/api/copy/generate', {
         method: 'POST',
@@ -72,6 +80,8 @@ export function PropertyPanel() {
           productName,
           moods,
           prompt,
+          userCopyPrompt: copyPrompt || undefined,
+          channelCategory: channelCategory || undefined,
         }),
       });
 
@@ -88,7 +98,7 @@ export function PropertyPanel() {
     } finally {
       setIsGeneratingCopy(false);
     }
-  }, [design, updateLayer]);
+  }, [design, updateLayer, copyPrompt]);
 
   if (!design) return null;
 
@@ -191,6 +201,12 @@ export function PropertyPanel() {
               Flash
             </span>
           </div>
+          <textarea
+            value={copyPrompt}
+            onChange={(e) => setCopyPrompt(e.target.value)}
+            className="w-full bg-zinc-50 border border-zinc-200 rounded-md p-2.5 text-xs text-zinc-900 outline-none resize-none h-16 focus:bg-white focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 transition-all placeholder:text-zinc-400"
+            placeholder="카피 방향을 입력하세요 (예: 겨울 시즌 프로모션, 친근한 톤)"
+          />
           <button
             onClick={handleGenerateCopy}
             disabled={isGeneratingCopy}
