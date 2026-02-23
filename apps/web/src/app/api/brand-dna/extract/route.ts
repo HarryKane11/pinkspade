@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import OpenAI from 'openai';
+import { createClient } from '@/lib/supabase/server';
 
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_API_KEY ?? '',
@@ -41,6 +42,13 @@ function extractFonts(html: string): string[] {
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check — prevent anonymous resource consumption
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { url } = body;
 
@@ -48,8 +56,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
-    // Normalize URL
+    // Validate URL format
     const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+    try {
+      new URL(normalizedUrl);
+    } catch {
+      return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
+    }
 
     // Step 1: Scrape with Firecrawl
     const scrapeResult = await firecrawl.scrapeUrl(normalizedUrl, {

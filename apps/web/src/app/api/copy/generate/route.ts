@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { COPY_COST } from '@/lib/credits';
 import { checkAndDeductCredits } from '@/lib/credit-middleware';
+import { createClient } from '@/lib/supabase/server';
 
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
@@ -64,6 +65,13 @@ const CHANNEL_COPY_GUIDELINES: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const body: CopyRequest = await request.json();
     const { textLayers, brandDna, productName, moods, prompt, userCopyPrompt, channelCategory } = body;
 

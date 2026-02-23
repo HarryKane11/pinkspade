@@ -49,6 +49,10 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { brandName, websiteUrl, colors, typography, tone } = body;
 
+  if (!brandName || typeof brandName !== 'string' || brandName.trim().length === 0) {
+    return NextResponse.json({ error: 'Brand name is required' }, { status: 400 });
+  }
+
   // Get user's workspace
   const { data: workspace } = await supabase
     .from('workspaces')

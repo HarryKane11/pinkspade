@@ -24,9 +24,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pinkspade.app';
     const checkout = await polar.checkouts.create({
       products: [productId],
-      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
+      successUrl: `${appUrl}/dashboard?checkout=success`,
       customerEmail: user.email ?? undefined,
       metadata: {
         userId: user.id,

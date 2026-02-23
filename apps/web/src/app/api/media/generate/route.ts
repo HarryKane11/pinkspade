@@ -4,6 +4,7 @@ import { getModelById } from "@/lib/fal";
 import { mapToAspectRatio, mapToImageSize } from "@/lib/size-mapping";
 import { getCreditCost } from "@/lib/credits";
 import { checkAndDeductCredits, refundCredits } from "@/lib/credit-middleware";
+import { createClient } from "@/lib/supabase/server";
 
 // Server-side: use FAL_KEY directly (proxy is for client-side only)
 fal.config({
@@ -41,8 +42,10 @@ const FORMAT_TO_ASPECT: Record<string, string> = {
 
 // ─── Helpers ───
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const clean = hex.replace("#", "");
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const match = hex.match(/^#?([0-9a-fA-F]{6})$/);
+  if (!match) return null;
+  const clean = match[1];
   return {
     r: parseInt(clean.substring(0, 2), 16),
     g: parseInt(clean.substring(2, 4), 16),
@@ -72,6 +75,13 @@ interface MediaGenerateRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const body: MediaGenerateRequest = await request.json();
     const {
       prompt,
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
       width,
       height,
       format = "feed",
-      numImages = 1,
+      numImages: rawNumImages = 1,
       resolution,
       negativePrompt,
       brandDna,
@@ -87,6 +97,9 @@ export async function POST(request: NextRequest) {
       layoutImageBase64,
       inputImageUrl,
     } = body;
+
+    // Cap numImages to prevent cost explosion
+    const numImages = Math.max(1, Math.min(rawNumImages, 4));
 
     if (!prompt) {
       return NextResponse.json(
@@ -214,7 +227,7 @@ export async function POST(request: NextRequest) {
         brandDna.colors.accent,
       ].filter(Boolean) as string[];
       if (colorValues.length > 0) {
-        input.colors = colorValues.map((hex) => hexToRgb(hex));
+        input.colors = colorValues.map((hex) => hexToRgb(hex)).filter(Boolean);
       }
     }
 

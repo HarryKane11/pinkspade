@@ -46,7 +46,10 @@ export async function POST(request: NextRequest) {
         const metadata = event.data?.metadata as Record<string, string> | undefined;
         const userId = metadata?.userId;
         const planId = metadata?.planId;
-        if (!userId || !planId) break;
+        if (!userId || !planId) {
+          console.warn('Webhook checkout.completed missing userId or planId:', metadata);
+          break;
+        }
 
         const plan = planId.startsWith('ultra') ? 'ultra' : 'pro';
         const quota = PLAN_CREDITS[plan] ?? 500;
@@ -83,7 +86,10 @@ export async function POST(request: NextRequest) {
       case 'subscription.canceled': {
         const metadata = event.data?.metadata as Record<string, string> | undefined;
         const userId = metadata?.userId;
-        if (!userId) break;
+        if (!userId) {
+          console.warn('Webhook subscription.canceled missing userId:', metadata);
+          break;
+        }
 
         await supabase
           .from('profiles')
@@ -105,7 +111,10 @@ export async function POST(request: NextRequest) {
         const metadata = event.data?.metadata as Record<string, string> | undefined;
         const userId = metadata?.userId;
         const planId = metadata?.planId;
-        if (!userId) break;
+        if (!userId) {
+          console.warn('Webhook subscription.renewed missing userId:', metadata);
+          break;
+        }
 
         const plan = planId?.startsWith('ultra') ? 'ultra' : 'pro';
         const quota = PLAN_CREDITS[plan] ?? 500;
@@ -127,6 +136,9 @@ export async function POST(request: NextRequest) {
 
         break;
       }
+
+      default:
+        console.log(`Unhandled webhook event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true }, { status: 202 });
