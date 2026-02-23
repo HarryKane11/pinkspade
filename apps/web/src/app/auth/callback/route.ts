@@ -14,13 +14,30 @@ export async function GET(request: Request) {
       const forwardedHost = request.headers.get('x-forwarded-host')
       const isLocalEnv = process.env.NODE_ENV === 'development'
 
+      let redirectBase: string
       if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`)
+        redirectBase = origin
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+        redirectBase = `https://${forwardedHost}`
       } else {
-        return NextResponse.redirect(`${origin}${next}`)
+        redirectBase = origin
       }
+
+      // Check if user has completed onboarding
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single()
+
+        if (!profile || !profile.onboarding_completed) {
+          return NextResponse.redirect(`${redirectBase}/onboarding`)
+        }
+      }
+
+      return NextResponse.redirect(`${redirectBase}${next}`)
     }
   }
 

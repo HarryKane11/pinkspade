@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes: redirect unauthenticated users to login
-  const protectedPrefixes = ['/studio', '/workspace', '/brand-dna']
+  const protectedPrefixes = ['/studio', '/workspace', '/brand-dna', '/onboarding']
   const isProtectedRoute = protectedPrefixes.some((prefix) =>
     request.nextUrl.pathname.startsWith(prefix)
   )
@@ -50,6 +50,26 @@ export async function updateSession(request: NextRequest) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('next', request.nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // Redirect unonboarded users from app routes to onboarding
+  if (user && !request.nextUrl.pathname.startsWith('/onboarding')) {
+    const appPrefixes = ['/studio', '/workspace', '/brand-dna']
+    const isAppRoute = appPrefixes.some((prefix) =>
+      request.nextUrl.pathname.startsWith(prefix)
+    )
+
+    if (isAppRoute) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single()
+
+      if (profile && !profile.onboarding_completed) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
+    }
   }
 
   // Redirect authenticated users away from login page
