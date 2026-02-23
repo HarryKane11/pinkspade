@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   MousePointer2,
@@ -16,6 +17,7 @@ import {
   FolderOpen,
   Image as ImageIcon,
   Eye,
+  Coins,
 } from 'lucide-react';
 import { useStudio, useStudioActions } from '@/contexts/studio-context';
 import { cn } from '@/lib/utils';
@@ -41,6 +43,15 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
     canUndo,
     canRedo,
   } = useStudioActions();
+
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/credits/balance')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.balance != null) setCreditBalance(data.balance); })
+      .catch(() => {});
+  }, []);
 
   const tools = [
     { id: 'select' as const, icon: MousePointer2, label: '선택 (V)' },
@@ -163,6 +174,18 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
           <Share2 className="w-3.5 h-3.5" />
           Share
         </button>
+
+        {/* Credits badge */}
+        {creditBalance !== null && (
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 border border-zinc-200 rounded-md hover:bg-zinc-50 transition-colors"
+            title="크레딧 잔액"
+          >
+            <Coins className="w-3.5 h-3.5 text-amber-500" />
+            <span className="text-xs font-medium text-zinc-700">{creditBalance.toLocaleString()}</span>
+          </Link>
+        )}
 
         {/* Export */}
         <button

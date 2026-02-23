@@ -416,7 +416,10 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
               className="w-full flex items-center justify-between gap-2 p-2.5 border border-zinc-200 rounded-lg text-left hover:bg-zinc-50 transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-zinc-900 truncate">{selectedModel.name}</div>
+                <div className="text-xs font-medium text-zinc-900 truncate">
+                  {selectedModel.name}
+                  <span className="ml-1.5 text-[10px] font-normal text-zinc-400">{CREDIT_COSTS[selectedModel.id] ?? 30} cr/image</span>
+                </div>
                 <div className="text-[10px] text-zinc-400 truncate">{selectedModel.description}</div>
               </div>
               <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 flex-shrink-0 transition-transform ${showModelDropdown ? 'rotate-180' : ''}`} />
@@ -444,7 +447,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
                         ? 'bg-white/20 text-white'
                         : model.creditTier === 'ultra' ? 'bg-amber-50 text-amber-600' : model.creditTier === 'pro' ? 'bg-blue-50 text-blue-600' : 'bg-zinc-100 text-zinc-500'
                     }`}>
-                      {model.creditTier === 'ultra' ? 'Ultra' : model.creditTier === 'pro' ? 'Pro' : 'Basic'}
+                      {CREDIT_COSTS[model.id] ?? 30} cr
                     </span>
                   </button>
                 ))}
@@ -683,6 +686,11 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
           ) : (
             <>
               Generate Assets
+              {selectedCount > 0 && (
+                <span className="text-white/60 text-[10px] font-normal">
+                  ({(CREDIT_COSTS[selectedModel.id] ?? 30) * selectedCount} cr)
+                </span>
+              )}
               <Sparkles className="w-4 h-4" />
             </>
           )}
