@@ -31,10 +31,10 @@ export default function ContactPage() {
               </div>
             </div>
             <a
-              href="mailto:hello@pinkspade.ai"
+              href="mailto:jsagi2000@gmail.com"
               className="text-sm text-zinc-900 underline hover:text-zinc-600 transition-colors"
             >
-              hello@pinkspade.ai
+              jsagi2000@gmail.com
             </a>
           </div>
 
@@ -50,10 +50,10 @@ export default function ContactPage() {
               </div>
             </div>
             <a
-              href="mailto:support@pinkspade.ai"
+              href="mailto:jsagi2000@gmail.com"
               className="text-sm text-zinc-900 underline hover:text-zinc-600 transition-colors"
             >
-              support@pinkspade.ai
+              jsagi2000@gmail.com
             </a>
           </div>
 
@@ -69,10 +69,10 @@ export default function ContactPage() {
               </div>
             </div>
             <a
-              href="mailto:privacy@pinkspade.ai"
+              href="mailto:jsagi2000@gmail.com"
               className="text-sm text-zinc-900 underline hover:text-zinc-600 transition-colors"
             >
-              privacy@pinkspade.ai
+              jsagi2000@gmail.com
             </a>
           </div>
 
@@ -88,10 +88,10 @@ export default function ContactPage() {
               </div>
             </div>
             <a
-              href="mailto:partners@pinkspade.ai"
+              href="mailto:jsagi2000@gmail.com"
               className="text-sm text-zinc-900 underline hover:text-zinc-600 transition-colors"
             >
-              partners@pinkspade.ai
+              jsagi2000@gmail.com
             </a>
           </div>
         </div>

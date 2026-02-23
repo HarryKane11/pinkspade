@@ -179,7 +179,7 @@ export default function TermsPage() {
             <div className="mt-3 p-4 bg-zinc-50 rounded-lg text-sm space-y-1">
               <p><strong>Pink Spade Inc.</strong></p>
               <p>Seoul, South Korea</p>
-              <p>Email: <a href="mailto:legal@pinkspade.ai" className="text-zinc-900 underline">legal@pinkspade.ai</a></p>
+              <p>Email: <a href="mailto:jsagi2000@gmail.com" className="text-zinc-900 underline">jsagi2000@gmail.com</a></p>
             </div>
           </section>
         </div>

@@ -118,7 +118,7 @@ export default function PrivacyPage() {
               <li>Withdraw consent at any time</li>
             </ul>
             <p className="mt-2">
-              To exercise any of these rights, please contact us at <a href="mailto:privacy@pinkspade.ai" className="text-zinc-900 underline">privacy@pinkspade.ai</a>.
+              To exercise any of these rights, please contact us at <a href="mailto:jsagi2000@gmail.com" className="text-zinc-900 underline">jsagi2000@gmail.com</a>.
             </p>
           </section>
 
@@ -158,7 +158,7 @@ export default function PrivacyPage() {
             <div className="mt-3 p-4 bg-zinc-50 rounded-lg text-sm space-y-1">
               <p><strong>Pink Spade Inc.</strong></p>
               <p>Seoul, South Korea</p>
-              <p>Email: <a href="mailto:privacy@pinkspade.ai" className="text-zinc-900 underline">privacy@pinkspade.ai</a></p>
+              <p>Email: <a href="mailto:jsagi2000@gmail.com" className="text-zinc-900 underline">jsagi2000@gmail.com</a></p>
             </div>
           </section>
         </div>
