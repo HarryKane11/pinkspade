@@ -49,37 +49,20 @@ interface AssetGeneratorPanelProps {
   onFormatsChange?: (formats: CampaignFormat[]) => void;
 }
 
-// Unified model list: Gemini + all Fal AI models
+// All models are Fal AI (including Gemini via nano-banana-pro)
 interface UnifiedModel {
   id: string;
   name: string;
-  engine: 'gemini' | 'fal';
   description: string;
+  creditTier: string;
 }
 
-const ALL_MODELS: UnifiedModel[] = [
-  {
-    id: 'gemini-3-pro',
-    name: 'Gemini 3 Pro',
-    engine: 'gemini',
-    description: 'Layout reference + brand tone',
-  },
-  ...FAL_MODELS.map((m) => ({
-    id: m.id,
-    name: m.name,
-    engine: 'fal' as const,
-    description: m.description,
-  })),
-];
-
-// Map format to API format ID for generation
-function getApiFormatId(width: number, height: number): string {
-  const ratio = width / height;
-  if (Math.abs(ratio - 1) < 0.1) return 'feed';
-  if (ratio < 0.7) return 'story';
-  if (ratio > 1.5) return 'banner';
-  return 'custom';
-}
+const ALL_MODELS: UnifiedModel[] = FAL_MODELS.map((m) => ({
+  id: m.id,
+  name: m.name,
+  description: m.description,
+  creditTier: m.creditTier,
+}));
 
 export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCaptureCanvas, onFormatsChange }: AssetGeneratorPanelProps) {
   const [mode, setMode] = useState<'full' | 'layout'>('full');
@@ -95,6 +78,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
   const [formats, setFormats] = useState<CampaignFormat[]>([]);
   const [customWidth, setCustomWidth] = useState('1080');
   const [customHeight, setCustomHeight] = useState('1080');
+  const [resolution, setResolution] = useState('2K');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync state to sessionStorage
@@ -285,63 +269,37 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
     const results: GeneratedAsset[] = [];
 
     for (const fmt of selectedFormats) {
-      const apiFormatId = getApiFormatId(fmt.width, fmt.height);
       try {
-        if (selectedModel.engine === 'fal') {
-          const res = await fetch('/api/media/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              prompt: enhancedPrompt,
-              modelId: selectedModel.id,
-              format: apiFormatId,
-              numImages: 1,
-              brandDna: brandDna ? { colors: brandDna.colors, tone: brandDna.tone } : undefined,
-              inputImageUrl: selectedModel.id === 'flux-kontext'
-                ? (layoutImageBase64 || productImageBase64)
-                : undefined,
-            }),
-          });
+        const res = await fetch('/api/media/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: enhancedPrompt,
+            modelId: selectedModel.id,
+            width: fmt.width,
+            height: fmt.height,
+            numImages: 1,
+            resolution: selectedModel.id === 'nano-banana-pro' ? resolution : undefined,
+            brandDna: brandDna ? { colors: brandDna.colors, tone: brandDna.tone } : undefined,
+            productImageBase64,
+            layoutImageBase64: mode === 'full' ? layoutImageBase64 : undefined,
+          }),
+        });
 
-          if (res.ok) {
-            const data = await res.json();
-            const firstImage = data.images?.[0];
-            if (firstImage?.url) {
-              results.push({
-                id: `${fmt.channelId}-${Date.now()}`,
-                image: firstImage.url,
-                format: fmt.channelId,
-                label: fmt.label,
-              });
-            }
-          } else {
-            const err = await res.json().catch(() => ({}));
-            console.error(`Fal AI generation failed for ${fmt.channelId}:`, err);
+        if (res.ok) {
+          const data = await res.json();
+          const firstImage = data.images?.[0];
+          if (firstImage?.url) {
+            results.push({
+              id: `${fmt.channelId}-${Date.now()}`,
+              image: firstImage.url,
+              format: fmt.channelId,
+              label: fmt.label,
+            });
           }
         } else {
-          const res = await fetch('/api/assets/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              prompt: enhancedPrompt,
-              brandDna,
-              productImageBase64,
-              layoutImageBase64: mode === 'full' ? layoutImageBase64 : undefined,
-              format: { id: apiFormatId, label: fmt.label },
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.image) {
-              results.push({
-                id: `${fmt.channelId}-${Date.now()}`,
-                image: data.image.startsWith('data:') ? data.image : `data:image/png;base64,${data.image}`,
-                format: fmt.channelId,
-                label: fmt.label,
-              });
-            }
-          }
+          const err = await res.json().catch(() => ({}));
+          console.error(`Generation failed for ${fmt.channelId}:`, err);
         }
       } catch (err) {
         console.error(`Generation failed for ${fmt.channelId}:`, err);
@@ -351,7 +309,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
     if (results.length > 0) {
       onResults?.(results);
     }
-  }, [onGenerate, onResults, formats, prompt, productName, selectedMoods, uploadedImage, mode, onCaptureCanvas, selectedModel]);
+  }, [onGenerate, onResults, formats, prompt, productName, selectedMoods, uploadedImage, mode, onCaptureCanvas, selectedModel, resolution]);
 
   return (
     <aside className="w-80 bg-white border-r border-zinc-200 flex flex-col flex-shrink-0 z-10 overflow-y-auto">
@@ -391,6 +349,57 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
       </div>
 
       <div className="flex-1 p-4 flex flex-col gap-5">
+        {/* Product Image Upload (top priority) */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-medium text-zinc-700">Subject / Product Image</label>
+          {uploadedImage ? (
+            <div className="relative rounded-xl border border-zinc-200 overflow-hidden bg-zinc-50 group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={uploadedImage.previewUrl}
+                alt="Uploaded product"
+                className="w-full h-32 object-contain bg-white"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                <button onClick={handleReplaceImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Replace">
+                  <RotateCcw className="w-4 h-4 text-zinc-700" />
+                </button>
+                <button onClick={handleRemoveImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Remove">
+                  <X className="w-4 h-4 text-red-500" />
+                </button>
+              </div>
+              <div className="px-3 py-1.5 border-t border-zinc-100 bg-white">
+                <p className="text-[10px] text-zinc-500 truncate">{uploadedImage.file.name}</p>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={handleUploadClick}
+              className="border border-dashed border-zinc-300 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors cursor-pointer group flex flex-col items-center justify-center p-4 text-center h-24"
+            >
+              <div className="w-7 h-7 rounded-full bg-white border border-zinc-200 shadow-sm flex items-center justify-center mb-1.5 group-hover:-translate-y-0.5 transition-transform">
+                <Upload className="w-3.5 h-3.5 text-zinc-500" />
+              </div>
+              <span className="text-[11px] font-medium text-zinc-900">Click to upload</span>
+              <span className="text-[9px] text-zinc-400 mt-0.5">PNG, JPG, WebP up to 10MB</span>
+            </div>
+          )}
+        </div>
+
+        {/* Product Name */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-700">Product Name</label>
+          <input
+            type="text"
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+            className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all placeholder:text-zinc-400"
+            placeholder="e.g. Aurora Skincare Serum"
+          />
+        </div>
+
+        <div className="w-full h-px bg-zinc-100" />
+
         {/* AI Model Selection */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-medium text-zinc-700">AI Model</label>
@@ -426,18 +435,32 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
                     <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${
                       selectedModel.id === model.id
                         ? 'bg-white/20 text-white'
-                        : model.engine === 'gemini' ? 'bg-blue-50 text-blue-600' : 'bg-zinc-100 text-zinc-500'
+                        : model.creditTier === 'ultra' ? 'bg-amber-50 text-amber-600' : model.creditTier === 'pro' ? 'bg-blue-50 text-blue-600' : 'bg-zinc-100 text-zinc-500'
                     }`}>
-                      {model.engine === 'gemini' ? 'Gemini' : 'Fal AI'}
+                      {model.creditTier === 'ultra' ? 'Ultra' : model.creditTier === 'pro' ? 'Pro' : 'Basic'}
                     </span>
                   </button>
                 ))}
               </div>
             )}
           </div>
-        </div>
 
-        <div className="w-full h-px bg-zinc-100" />
+          {/* Resolution dropdown for nano-banana-pro */}
+          {selectedModel.id === 'nano-banana-pro' && (
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-zinc-500">Resolution</label>
+              <select
+                value={resolution}
+                onChange={(e) => setResolution(e.target.value)}
+                className="flex-1 text-[10px] text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-zinc-900/10"
+              >
+                <option value="1K">1K</option>
+                <option value="2K">2K (Recommended)</option>
+                <option value="4K">4K</option>
+              </select>
+            </div>
+          )}
+        </div>
 
         {/* Campaign Channels */}
         <div className="flex flex-col gap-3">
@@ -574,57 +597,6 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
               </div>
             )}
           </div>
-        </div>
-
-        <div className="w-full h-px bg-zinc-100" />
-
-        {/* Image Upload */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-zinc-700">Subject / Product Image</label>
-          {uploadedImage ? (
-            <div className="relative rounded-xl border border-zinc-200 overflow-hidden bg-zinc-50 group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={uploadedImage.previewUrl}
-                alt="Uploaded product"
-                className="w-full h-32 object-contain bg-white"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                <button onClick={handleReplaceImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Replace">
-                  <RotateCcw className="w-4 h-4 text-zinc-700" />
-                </button>
-                <button onClick={handleRemoveImage} className="p-2 bg-white rounded-lg shadow-sm hover:bg-zinc-50 transition-colors" title="Remove">
-                  <X className="w-4 h-4 text-red-500" />
-                </button>
-              </div>
-              <div className="px-3 py-1.5 border-t border-zinc-100 bg-white">
-                <p className="text-[10px] text-zinc-500 truncate">{uploadedImage.file.name}</p>
-              </div>
-            </div>
-          ) : (
-            <div
-              onClick={handleUploadClick}
-              className="border border-dashed border-zinc-300 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors cursor-pointer group flex flex-col items-center justify-center p-4 text-center h-24"
-            >
-              <div className="w-7 h-7 rounded-full bg-white border border-zinc-200 shadow-sm flex items-center justify-center mb-1.5 group-hover:-translate-y-0.5 transition-transform">
-                <Upload className="w-3.5 h-3.5 text-zinc-500" />
-              </div>
-              <span className="text-[11px] font-medium text-zinc-900">Click to upload</span>
-              <span className="text-[9px] text-zinc-400 mt-0.5">PNG, JPG, WebP up to 10MB</span>
-            </div>
-          )}
-        </div>
-
-        {/* Product Name */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-zinc-700">Product Name</label>
-          <input
-            type="text"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-            className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all placeholder:text-zinc-400"
-            placeholder="e.g. Aurora Skincare Serum"
-          />
         </div>
 
         <div className="w-full h-px bg-zinc-100" />
