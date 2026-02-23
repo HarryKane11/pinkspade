@@ -154,61 +154,65 @@ function StudioContent() {
     const design = createDemoDesign();
 
     // Check for brand DNA and apply to the design before loading
-    let brandDna: { colors?: Record<string, string>; typography?: Record<string, string> } | null = null;
-    try {
-      const session = sessionStorage.getItem('brandDna');
-      if (session) {
-        brandDna = JSON.parse(session);
-      }
-    } catch { /* ignore */ }
+    const applyBrand = async () => {
+      let brandDna: { colors?: Record<string, string>; typography?: Record<string, string> } | null = null;
+      try {
+        const session = sessionStorage.getItem('brandDna');
+        if (session) {
+          brandDna = JSON.parse(session);
+        }
+      } catch { /* ignore */ }
 
-    if (!brandDna) {
-      const latest = getLatestBrand();
-      if (latest) {
-        brandDna = { colors: latest.colors as Record<string, string>, typography: latest.typography as Record<string, string> };
-      }
-    }
-
-    if (brandDna) {
-      const colors = brandDna.colors ?? {};
-      const typo = brandDna.typography ?? {};
-
-      // Apply brand background color to canvas directly
-      if (colors.background) {
-        design.canvas.backgroundColor = colors.background;
-      }
-
-      // Apply brand text color to text layers
-      const textColor = colors.text || colors.primary || '#18181b';
-      for (const layer of design.layers) {
-        if (layer.type === 'text' && 'color' in layer) {
-          const tl = layer as TextLayer;
-          if (tl.name === 'Headline') {
-            tl.color = textColor;
-          } else if (tl.name === 'Description') {
-            tl.color = colors.secondary || textColor;
-          }
+      if (!brandDna) {
+        const latest = await getLatestBrand();
+        if (latest) {
+          brandDna = { colors: latest.colors as Record<string, string>, typography: latest.typography as Record<string, string> };
         }
       }
 
-      // Apply brand fonts
-      const headingFont = typo.heading;
-      const bodyFont = typo.body || typo.heading;
-      if (headingFont || bodyFont) {
+      if (brandDna) {
+        const colors = brandDna.colors ?? {};
+        const typo = brandDna.typography ?? {};
+
+        // Apply brand background color to canvas directly
+        if (colors.background) {
+          design.canvas.backgroundColor = colors.background;
+        }
+
+        // Apply brand text color to text layers
+        const textColor = colors.text || colors.primary || '#18181b';
         for (const layer of design.layers) {
-          if (layer.type === 'text' && 'fontFamily' in layer) {
+          if (layer.type === 'text' && 'color' in layer) {
             const tl = layer as TextLayer;
             if (tl.name === 'Headline') {
-              if (headingFont) tl.fontFamily = headingFont;
-            } else {
-              if (bodyFont) tl.fontFamily = bodyFont;
+              tl.color = textColor;
+            } else if (tl.name === 'Description') {
+              tl.color = colors.secondary || textColor;
+            }
+          }
+        }
+
+        // Apply brand fonts
+        const headingFont = typo.heading;
+        const bodyFont = typo.body || typo.heading;
+        if (headingFont || bodyFont) {
+          for (const layer of design.layers) {
+            if (layer.type === 'text' && 'fontFamily' in layer) {
+              const tl = layer as TextLayer;
+              if (tl.name === 'Headline') {
+                if (headingFont) tl.fontFamily = headingFont;
+              } else {
+                if (bodyFont) tl.fontFamily = bodyFont;
+              }
             }
           }
         }
       }
-    }
 
-    loadDesign(design);
+      loadDesign(design);
+    };
+
+    applyBrand();
   }, [designId, loadDesign]);
 
   const handleExport = useCallback(() => {
@@ -268,7 +272,7 @@ function StudioContent() {
         productName,
         createdAt: new Date().toISOString(),
       }));
-      saveDesignsToHistory(entries);
+      saveDesignsToHistory(entries).catch(() => {});
     } catch { /* don't block UI on history save failure */ }
   }, []);
 

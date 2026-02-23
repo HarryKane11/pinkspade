@@ -10,7 +10,7 @@ export function BrandPanel() {
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadBrand = () => {
+    const loadBrand = async () => {
       // Try sessionStorage first (current session)
       try {
         const session = sessionStorage.getItem('brandDna');
@@ -30,8 +30,8 @@ export function BrandPanel() {
         }
       } catch { /* ignore */ }
 
-      // Fallback to localStorage (most recent brand)
-      const latest = getLatestBrand();
+      // Fallback to Supabase (most recent brand)
+      const latest = await getLatestBrand();
       if (latest) {
         setBrand(latest);
         // Also load into sessionStorage for other components

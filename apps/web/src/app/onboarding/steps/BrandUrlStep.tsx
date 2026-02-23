@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Globe, Loader2, CheckCircle2 } from 'lucide-react'
-import { saveBrand, type StoredBrandDna } from '@/lib/brand-storage'
+import { saveBrand } from '@/lib/brand-storage'
 import type { OnboardingData } from '../page'
 
 interface Props {
@@ -95,17 +95,18 @@ export default function BrandUrlStep({ data, update, onNext }: Props) {
         sessionStorage.setItem('brandDnaMeta', JSON.stringify(result.metadata))
         sessionStorage.setItem('brandDnaUrl', domain)
 
-        // Persist to localStorage (for workspace)
-        const stored: StoredBrandDna = {
-          id: crypto.randomUUID(),
+        // Persist to Supabase (with localStorage fallback)
+        const saved = await saveBrand({
           brandName: brandDna.brandName || domain,
           websiteUrl: domain,
           extractedAt: new Date().toISOString(),
           colors: brandDna.colors ?? {},
           typography: brandDna.typography ?? {},
           tone: brandDna.tone ?? {},
+        })
+        if (saved) {
+          sessionStorage.setItem('activeBrandId', saved.id)
         }
-        saveBrand(stored)
 
         setPhase('done')
         setTimeout(onNext, 1200)

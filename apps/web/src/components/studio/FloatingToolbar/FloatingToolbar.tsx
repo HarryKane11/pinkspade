@@ -45,11 +45,12 @@ export function FloatingToolbar() {
       }
     } catch { /* ignore */ }
 
-    const latest = getLatestBrand();
-    if (latest) {
-      setBrandColors(latest.colors);
-      setBrandFonts(latest.typography);
-    }
+    getLatestBrand().then((latest) => {
+      if (latest) {
+        setBrandColors(latest.colors);
+        setBrandFonts(latest.typography);
+      }
+    });
   }, []);
 
   // Close font dropdown on outside click

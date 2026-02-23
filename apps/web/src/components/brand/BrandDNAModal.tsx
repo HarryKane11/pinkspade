@@ -10,7 +10,7 @@ import {
   Loader2,
   CheckCircle2,
 } from 'lucide-react';
-import { saveBrand, type StoredBrandDna } from '@/lib/brand-storage';
+import { saveBrand } from '@/lib/brand-storage';
 
 type ModalState = 'input' | 'analyzing' | 'success';
 
@@ -139,17 +139,18 @@ export function BrandDNAModal({ open, onClose }: BrandDNAModalProps) {
           sessionStorage.setItem('brandDnaMeta', JSON.stringify(data.metadata));
           sessionStorage.setItem('brandDnaUrl', hostname);
 
-          // Persist to localStorage for workspace
-          const stored: StoredBrandDna = {
-            id: crypto.randomUUID(),
+          // Persist to Supabase (with localStorage fallback)
+          const saved = await saveBrand({
             brandName: data.brandDna.brandName || hostname,
             websiteUrl: hostname,
             extractedAt: new Date().toISOString(),
             colors: data.brandDna.colors ?? {},
             typography: data.brandDna.typography ?? {},
             tone: data.brandDna.tone ?? {},
-          };
-          saveBrand(stored);
+          });
+          if (saved) {
+            sessionStorage.setItem('activeBrandId', saved.id);
+          }
         }
 
         // Complete final step

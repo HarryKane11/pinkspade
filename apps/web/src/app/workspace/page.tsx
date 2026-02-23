@@ -41,9 +41,13 @@ export default function WorkspacePage() {
   const [expandedChannels, setExpandedChannels] = useState<Set<string>>(new Set());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const refreshData = useCallback(() => {
-    setBrands(getAllBrands());
-    setDesignGroups(getDesignsGroupedByBrandAndChannel());
+  const refreshData = useCallback(async () => {
+    const [b, d] = await Promise.all([
+      getAllBrands(),
+      getDesignsGroupedByBrandAndChannel(),
+    ]);
+    setBrands(b);
+    setDesignGroups(d);
   }, []);
 
   useEffect(() => {
@@ -95,18 +99,18 @@ export default function WorkspacePage() {
   );
 
   const handleRemoveBrand = useCallback(
-    (e: React.MouseEvent, id: string) => {
+    async (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
-      removeBrand(id);
+      await removeBrand(id);
       refreshData();
     },
     [refreshData]
   );
 
   const handleRemoveDesign = useCallback(
-    (e: React.MouseEvent, id: string) => {
+    async (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
-      removeDesignFromHistory(id);
+      await removeDesignFromHistory(id);
       refreshData();
     },
     [refreshData]
