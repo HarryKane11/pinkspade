@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { COPY_COST } from '@/lib/credits';
+import { checkAndDeductCredits } from '@/lib/credit-middleware';
 
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
@@ -67,6 +69,22 @@ export async function POST(request: NextRequest) {
 
     if (!textLayers || textLayers.length === 0) {
       return NextResponse.json({ error: 'No text layers provided' }, { status: 400 });
+    }
+
+    // ─── Credit Check ───
+    const creditResult = await checkAndDeductCredits(COPY_COST, 'copy');
+    if (!creditResult.success) {
+      return NextResponse.json(
+        {
+          error: creditResult.error === 'insufficient_credits'
+            ? 'Insufficient credits'
+            : 'Credit check failed',
+          creditError: true,
+          balance: creditResult.balance,
+          required: COPY_COST,
+        },
+        { status: 402 }
+      );
     }
 
     // Build context

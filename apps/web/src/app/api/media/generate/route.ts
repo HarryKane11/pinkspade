@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { fal } from "@fal-ai/client";
 import { getModelById } from "@/lib/fal";
 import { mapToAspectRatio, mapToImageSize } from "@/lib/size-mapping";
+import { getCreditCost } from "@/lib/credits";
+import { checkAndDeductCredits } from "@/lib/credit-middleware";
 
 // Server-side: use FAL_KEY directly (proxy is for client-side only)
 fal.config({
@@ -100,6 +102,23 @@ export async function POST(request: NextRequest) {
           error: `Unknown model: ${modelId}. Available: ${Object.keys(ALLOWED_MODELS).join(", ")}`,
         },
         { status: 400 }
+      );
+    }
+
+    // ─── Credit Check ───
+    const cost = getCreditCost(modelId);
+    const creditResult = await checkAndDeductCredits(cost, "generation", modelId);
+    if (!creditResult.success) {
+      return NextResponse.json(
+        {
+          error: creditResult.error === "insufficient_credits"
+            ? "Insufficient credits"
+            : "Credit check failed",
+          creditError: true,
+          balance: creditResult.balance,
+          required: cost,
+        },
+        { status: 402 }
       );
     }
 

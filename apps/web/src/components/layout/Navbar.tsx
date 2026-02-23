@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { Coins, ChevronDown } from 'lucide-react';
 
 interface NavbarProps {
   onStartSetup?: () => void;
@@ -21,6 +22,10 @@ export function Navbar({ onStartSetup }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [creditPlan, setCreditPlan] = useState<string>('free');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -38,12 +43,39 @@ export function Navbar({ onStartSetup }: NavbarProps) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSignOut = async () => {
+  // Fetch credit balance when user is logged in
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/credits/balance')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data) {
+          setCreditBalance(data.balance);
+          setCreditPlan(data.plan);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!showUserDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showUserDropdown]);
+
+  const handleSignOut = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    setShowUserDropdown(false);
     router.push('/');
     router.refresh();
-  };
+  }, [router]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-zinc-200/50 bg-white/80 backdrop-blur-md transition-all duration-300">
@@ -91,23 +123,91 @@ export function Navbar({ onStartSetup }: NavbarProps) {
               >
                 Workspace
               </Link>
-              <button
-                onClick={handleSignOut}
-                className="text-xs font-medium text-zinc-400 hover:text-zinc-600 transition-colors hidden sm:block"
-              >
-                Sign out
-              </button>
-              {user.user_metadata?.avatar_url ? (
-                <img
-                  src={user.user_metadata.avatar_url}
-                  alt={user.user_metadata.full_name || 'User'}
-                  className="w-7 h-7 rounded-full border border-zinc-200"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-medium">
-                  {(user.email || 'U').charAt(0).toUpperCase()}
+
+              {/* Credit badge */}
+              {creditBalance !== null && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-zinc-100 rounded-full text-[10px] font-medium text-zinc-600">
+                  <Coins className="w-3 h-3 text-amber-500" />
+                  {creditBalance.toLocaleString()}
                 </div>
               )}
+
+              {/* User avatar + dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowUserDropdown((v) => !v)}
+                  className="flex items-center gap-1.5 cursor-pointer"
+                >
+                  {user.user_metadata?.avatar_url ? (
+                    <img
+                      src={user.user_metadata.avatar_url}
+                      alt={user.user_metadata.full_name || 'User'}
+                      className="w-7 h-7 rounded-full border border-zinc-200"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-medium">
+                      {(user.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <ChevronDown className={`w-3 h-3 text-zinc-400 transition-transform ${showUserDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showUserDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-zinc-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                    {/* User info */}
+                    <div className="px-4 py-3 border-b border-zinc-100">
+                      <p className="text-xs font-medium text-zinc-900 truncate">{user.user_metadata?.full_name || user.email}</p>
+                      <p className="text-[10px] text-zinc-400 truncate">{user.email}</p>
+                    </div>
+
+                    {/* Balance + Plan */}
+                    <div className="px-4 py-2.5 border-b border-zinc-100 bg-zinc-50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-zinc-500">Credits</span>
+                        <span className="text-xs font-medium text-zinc-900">{creditBalance?.toLocaleString() ?? '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-zinc-500">Plan</span>
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          creditPlan === 'enterprise' ? 'bg-purple-100 text-purple-700'
+                            : creditPlan === 'pro' ? 'bg-blue-100 text-blue-700'
+                            : 'bg-zinc-100 text-zinc-600'
+                        }`}>
+                          {creditPlan === 'enterprise' ? 'Enterprise' : creditPlan === 'pro' ? 'Pro' : 'Free'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Links */}
+                    <div className="py-1">
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 transition-colors"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/pricing"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 transition-colors"
+                      >
+                        Upgrade Plan
+                      </Link>
+                    </div>
+
+                    {/* Sign out */}
+                    <div className="border-t border-zinc-100 py-1">
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-4 py-2 text-xs text-zinc-400 hover:text-red-500 hover:bg-red-50/50 transition-colors"
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <>

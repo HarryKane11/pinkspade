@@ -12,6 +12,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { FAL_MODELS } from '@/lib/fal';
+import { CREDIT_COSTS } from '@/lib/credits';
 import {
   CHANNEL_CATEGORIES,
   getPresetsByCategory,
@@ -646,6 +647,15 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
 
       {/* Sticky Generate Button */}
       <div className="p-4 border-t border-zinc-200 bg-white sticky bottom-0">
+        {/* Credit cost estimate */}
+        {selectedCount > 0 && (
+          <div className="flex items-center justify-between mb-2 text-[10px] text-zinc-500">
+            <span>Estimated cost</span>
+            <span className="font-medium text-zinc-700">
+              {(CREDIT_COSTS[selectedModel.id] ?? 30) * selectedCount} credits ({selectedCount} format{selectedCount > 1 ? 's' : ''})
+            </span>
+          </div>
+        )}
         <button
           onClick={handleGenerate}
           disabled={isGenerating || selectedCount === 0}
