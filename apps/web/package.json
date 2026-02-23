@@ -13,6 +13,7 @@
     "@fal-ai/server-proxy": "^1.2.1",
     "@hookform/resolvers": "^3.3.0",
     "@mendable/firecrawl-js": "^1.21.1",
+    "@polar-sh/sdk": "^0.43.1",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.39.0",
     "clsx": "^2.1.0",
