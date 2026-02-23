@@ -275,17 +275,30 @@ export function getPresetsByCategory(category: ChannelPreset['category']): Chann
   return CHANNEL_PRESETS.filter(preset => preset.category === category);
 }
 
-export function getCategories(): Array<{ id: ChannelPreset['category']; nameKo: string }> {
-  return [
-    { id: 'instagram', nameKo: '인스타그램' },
-    { id: 'kakao', nameKo: '카카오' },
-    { id: 'naver', nameKo: '네이버' },
-    { id: 'coupang', nameKo: '쿠팡' },
-    { id: 'google', nameKo: '구글' },
-    { id: 'youtube', nameKo: '유튜브' },
-    { id: 'facebook', nameKo: '페이스북' },
-    { id: 'twitter', nameKo: 'X(트위터)' },
-    { id: 'linkedin', nameKo: '링크드인' },
-    { id: 'custom', nameKo: '맞춤' },
-  ];
+export interface ChannelCategory {
+  id: ChannelPreset['category'];
+  nameKo: string;
+  nameEn: string;
+  logo: string; // path under /channel-logos/
+}
+
+export const CHANNEL_CATEGORIES: ChannelCategory[] = [
+  { id: 'instagram', nameKo: '인스타그램', nameEn: 'Instagram', logo: '/channel-logos/instagram.png' },
+  { id: 'kakao', nameKo: '카카오', nameEn: 'Kakao', logo: '/channel-logos/kakao.png' },
+  { id: 'naver', nameKo: '네이버', nameEn: 'Naver', logo: '/channel-logos/naver.png' },
+  { id: 'coupang', nameKo: '쿠팡', nameEn: 'Coupang', logo: '/channel-logos/coupang.png' },
+  { id: 'google', nameKo: '구글', nameEn: 'Google', logo: '/channel-logos/google.png' },
+  { id: 'youtube', nameKo: '유튜브', nameEn: 'YouTube', logo: '/channel-logos/youtube.png' },
+  { id: 'facebook', nameKo: '페이스북', nameEn: 'Facebook', logo: '/channel-logos/facebook.png' },
+  { id: 'twitter', nameKo: 'X(트위터)', nameEn: 'X (Twitter)', logo: '/channel-logos/twitter.png' },
+  { id: 'linkedin', nameKo: '링크드인', nameEn: 'LinkedIn', logo: '/channel-logos/linkedin.png' },
+  { id: 'custom', nameKo: '맞춤', nameEn: 'Custom', logo: '' },
+];
+
+export function getCategories(): ChannelCategory[] {
+  return CHANNEL_CATEGORIES;
+}
+
+export function getCategoryById(id: string): ChannelCategory | undefined {
+  return CHANNEL_CATEGORIES.find((c) => c.id === id);
 }

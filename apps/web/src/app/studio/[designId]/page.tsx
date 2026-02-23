@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { X, Image as ImageIcon, Smartphone, Monitor, Maximize2, LayoutGrid } from 'lucide-react';
+import { X, LayoutGrid } from 'lucide-react';
 import { StudioProvider, useStudioActions, useStudio } from '@/contexts/studio-context';
 import { StudioToolbar } from '@/components/studio/Toolbar/StudioToolbar';
 import { AssetGeneratorPanel, type GeneratedAsset, type CampaignFormat } from '@/components/studio/AssetGenerator/AssetGeneratorPanel';
@@ -31,19 +31,11 @@ import { LayerPanel } from '@/components/studio/LayerPanel/LayerPanel';
 import { BrandPanel } from '@/components/studio/BrandPanel/BrandPanel';
 import { AssetPreviewOverlay } from '@/components/studio/AssetPreview/AssetPreviewOverlay';
 import { ExportDialog } from '@/components/export/ExportDialog';
-import { RatioSelector } from '@/components/studio/RatioSelector/RatioSelector';
 import { FloatingToolbar } from '@/components/studio/FloatingToolbar/FloatingToolbar';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { getLatestBrand } from '@/lib/brand-storage';
 import { saveDesignsToHistory, type DesignHistoryEntry } from '@/lib/design-history';
-import type { DesignJSON, TextLayer, BackgroundLayer } from '@/lib/shared';
-
-const FORMAT_SIZES: Record<string, { width: number; height: number; label: string; icon: React.ReactNode }> = {
-  feed: { width: 1080, height: 1080, label: 'Feed 1:1', icon: <ImageIcon className="w-3 h-3" /> },
-  story: { width: 1080, height: 1920, label: 'Story 9:16', icon: <Smartphone className="w-3 h-3" /> },
-  banner: { width: 1920, height: 1080, label: 'Banner 16:9', icon: <Monitor className="w-3 h-3" /> },
-  custom: { width: 1080, height: 1080, label: 'Custom', icon: <Maximize2 className="w-3 h-3" /> },
-};
+import type { DesignJSON, TextLayer } from '@/lib/shared';
 
 // Demo design for testing
 function createDemoDesign(): DesignJSON {
@@ -63,18 +55,6 @@ function createDemoDesign(): DesignJSON {
       backgroundColor: '#ffffff',
     },
     layers: [
-      {
-        id: crypto.randomUUID(),
-        name: 'Background',
-        type: 'background',
-        visible: true,
-        locked: false,
-        opacity: 1,
-        position: { x: 0, y: 0 },
-        size: { width: 1080, height: 1080 },
-        backgroundColor: '#ffffff',
-        backgroundFit: 'cover',
-      },
       {
         id: crypto.randomUUID(),
         name: 'Headline',
@@ -144,7 +124,7 @@ function StudioContent() {
   const [campaignFormats, setCampaignFormats] = useState<CampaignFormat[]>([]);
   const [activeFormatTab, setActiveFormatTab] = useState<string>('all');
 
-  const { loadDesign, updateCanvas, updateLayer, fitToCanvas } = useStudioActions();
+  const { loadDesign, updateCanvas, fitToCanvas } = useStudioActions();
   const storeDesign = useStudio((s) => s.design);
   const isLoading = useStudio((s) => s.isLoading);
   const error = useStudio((s) => s.error);
@@ -191,13 +171,9 @@ function StudioContent() {
       const colors = brandDna.colors ?? {};
       const typo = brandDna.typography ?? {};
 
-      // Apply brand background color
+      // Apply brand background color to canvas directly
       if (colors.background) {
         design.canvas.backgroundColor = colors.background;
-        const bgLayer = design.layers.find((l) => l.type === 'background');
-        if (bgLayer && 'backgroundColor' in bgLayer) {
-          (bgLayer as { backgroundColor: string }).backgroundColor = colors.background;
-        }
       }
 
       // Apply brand text color to text layers
@@ -329,18 +305,12 @@ function StudioContent() {
 
   const handleFormatTabChange = useCallback((formatId: string) => {
     setActiveFormatTab(formatId);
-    if (formatId === 'all' || !FORMAT_SIZES[formatId]) return;
+    if (formatId === 'all') return;
 
-    const { width, height } = FORMAT_SIZES[formatId];
-    updateCanvas({ width, height });
+    const fmt = campaignFormats.find((f) => f.id === formatId);
+    if (!fmt) return;
 
-    // Also update background layer to match
-    if (storeDesign) {
-      const bgLayer = storeDesign.layers.find((l) => l.type === 'background') as BackgroundLayer | undefined;
-      if (bgLayer) {
-        updateLayer(bgLayer.id, { size: { width, height } });
-      }
-    }
+    updateCanvas({ width: fmt.width, height: fmt.height });
 
     // Re-fit canvas to container
     const container = containerRef.current;
@@ -348,7 +318,7 @@ function StudioContent() {
       const rect = container.getBoundingClientRect();
       setTimeout(() => fitToCanvas(rect.width, rect.height), 50);
     }
-  }, [updateCanvas, updateLayer, fitToCanvas, storeDesign, containerRef]);
+  }, [updateCanvas, fitToCanvas, containerRef, campaignFormats]);
 
   const handleShare = useCallback(async () => {
     if (!storeDesign || !stageRef.current) return;
@@ -481,31 +451,27 @@ function StudioContent() {
                 <LayoutGrid className="w-3 h-3" />
                 All
               </button>
-              {campaignFormats.filter((f) => f.checked).map((fmt) => {
-                const config = FORMAT_SIZES[fmt.id];
-                if (!config) return null;
-                return (
-                  <button
-                    key={fmt.id}
-                    onClick={() => handleFormatTabChange(fmt.id)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
-                      activeFormatTab === fmt.id
-                        ? 'bg-zinc-900 text-white shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
-                    )}
-                  >
-                    {config.icon}
-                    {config.label}
-                    <span className={cn(
-                      'text-[9px] font-mono',
-                      activeFormatTab === fmt.id ? 'text-zinc-400' : 'text-zinc-400'
-                    )}>
-                      {config.width}×{config.height}
-                    </span>
-                  </button>
-                );
-              })}
+              {campaignFormats.filter((f) => f.checked).map((fmt) => (
+                <button
+                  key={fmt.id}
+                  onClick={() => handleFormatTabChange(fmt.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
+                    activeFormatTab === fmt.id
+                      ? 'bg-zinc-900 text-white shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+                  )}
+                >
+                  {fmt.logo && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={fmt.logo} alt="" className="w-3.5 h-3.5 object-contain rounded-sm" />
+                  )}
+                  {fmt.label}
+                  <span className="text-[9px] font-mono text-zinc-400">
+                    {fmt.width}×{fmt.height}
+                  </span>
+                </button>
+              ))}
             </div>
           )}
 
@@ -514,11 +480,6 @@ function StudioContent() {
             ref={containerRef}
             className="flex-1 bg-zinc-100 overflow-auto flex items-center justify-center relative"
           >
-            {/* Ratio selector — top center */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
-              <RatioSelector />
-            </div>
-
             {/* Dot pattern background */}
             <div
               className="absolute inset-0 opacity-[0.04] pointer-events-none"

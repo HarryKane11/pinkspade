@@ -1,27 +1,14 @@
 'use client';
 
-import { Image as ImageIcon, Smartphone, Monitor, Maximize2, ChevronRight } from 'lucide-react';
-import type { GeneratedAsset } from '../AssetGenerator/AssetGeneratorPanel';
-
-interface SelectedFormat {
-  id: string;
-  label: string;
-  checked: boolean;
-}
+import { ChevronRight, Maximize2 } from 'lucide-react';
+import type { GeneratedAsset, CampaignFormat } from '../AssetGenerator/AssetGeneratorPanel';
 
 interface ResultsPanelProps {
   visible: boolean;
   generatedAssets?: GeneratedAsset[];
-  selectedFormats?: SelectedFormat[];
+  selectedFormats?: CampaignFormat[];
   onPreviewAsset?: (asset: GeneratedAsset) => void;
 }
-
-const FORMAT_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
-  feed: { label: 'Instagram Feed', icon: <ImageIcon className="w-3.5 h-3.5" /> },
-  story: { label: 'Stories (9:16)', icon: <Smartphone className="w-3.5 h-3.5" /> },
-  banner: { label: 'Banner (16:9)', icon: <Monitor className="w-3.5 h-3.5" /> },
-  custom: { label: 'Custom', icon: <Maximize2 className="w-3.5 h-3.5" /> },
-};
 
 export function ResultsPanel({ visible, generatedAssets, selectedFormats, onPreviewAsset }: ResultsPanelProps) {
   if (!visible) return null;
@@ -39,8 +26,16 @@ export function ResultsPanel({ visible, generatedAssets, selectedFormats, onPrev
 
   // Use active formats as the base; include any extra formats from generated assets
   const displayFormats = activeFormats.length > 0
-    ? activeFormats.map((f) => f.id)
-    : [...new Set(generatedAssets?.map((a) => a.format) ?? [])];
+    ? activeFormats
+    : [...new Set(generatedAssets?.map((a) => a.format) ?? [])].map((fmtId) => ({
+        id: fmtId,
+        label: fmtId,
+        channelId: '',
+        logo: '',
+        width: 0,
+        height: 0,
+        checked: true,
+      }));
 
   const totalItems = generatedAssets?.length ?? 0;
 
@@ -54,19 +49,32 @@ export function ResultsPanel({ visible, generatedAssets, selectedFormats, onPrev
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
-        {displayFormats.map((formatId) => {
-          const config = FORMAT_CONFIG[formatId] ?? FORMAT_CONFIG.custom;
+        {displayFormats.map((fmt) => {
+          const formatId = typeof fmt === 'string' ? fmt : fmt.id;
           const assets = assetsByFormat[formatId] ?? [];
-          const count = assets.length;
+          // Also check by channelId for matching
+          const channelAssets = fmt.channelId ? (assetsByFormat[fmt.channelId] ?? []) : [];
+          const allAssets = [...assets, ...channelAssets];
+          const count = allAssets.length;
 
           return (
             <details key={formatId} className="group" open={count > 0}>
               <summary className="flex items-center justify-between px-2 py-2 hover:bg-zinc-200/50 rounded-md cursor-pointer transition-colors text-xs font-medium text-zinc-700">
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded flex items-center justify-center ${count > 0 ? 'bg-zinc-900 text-white' : 'bg-zinc-200 text-zinc-400'}`}>
-                    {config.icon}
+                  <div className={`w-6 h-6 rounded flex items-center justify-center overflow-hidden ${count > 0 ? 'bg-zinc-900' : 'bg-zinc-200'}`}>
+                    {fmt.logo ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={fmt.logo} alt="" className="w-4 h-4 object-contain" />
+                    ) : (
+                      <Maximize2 className={`w-3.5 h-3.5 ${count > 0 ? 'text-white' : 'text-zinc-400'}`} />
+                    )}
                   </div>
-                  <span className={count > 0 ? 'text-zinc-900' : 'text-zinc-500'}>{config.label}</span>
+                  <div className="flex flex-col">
+                    <span className={count > 0 ? 'text-zinc-900' : 'text-zinc-500'}>{fmt.label}</span>
+                    {fmt.width > 0 && (
+                      <span className="text-[9px] text-zinc-400 font-mono">{fmt.width}×{fmt.height}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
@@ -80,7 +88,7 @@ export function ResultsPanel({ visible, generatedAssets, selectedFormats, onPrev
 
               {count > 0 && (
                 <div className="mt-1 pl-8 pr-2 flex flex-col gap-1 pb-2">
-                  {assets.map((asset, i) => (
+                  {allAssets.map((asset, i) => (
                     <div
                       key={asset.id}
                       onClick={() => onPreviewAsset?.(asset)}
