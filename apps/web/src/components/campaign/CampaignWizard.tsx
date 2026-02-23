@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save } from 'lucide-react';
 import { CampaignStepper } from './CampaignStepper';
 import { Step1Setup } from './Step1Setup';
+import { Step2Creative } from './Step2Creative';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -149,7 +150,7 @@ export function CampaignWizard() {
   // Step components will be wired in subsequent tasks
   const stepContent = [
     <Step1Setup key="step1" data={data} update={update} onNext={next} />,
-    <div key="step2" className="text-center text-zinc-400 py-20">Step 2: 크리에이티브 입력 (placeholder)</div>,
+    <Step2Creative key="step2" data={data} update={update} onNext={next} onBack={back} />,
     <div key="step3" className="text-center text-zinc-400 py-20">Step 3: 생성 & 편집 (placeholder)</div>,
     <div key="step4" className="text-center text-zinc-400 py-20">Step 4: 검토 & 내보내기 (placeholder)</div>,
   ];
