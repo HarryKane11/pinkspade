@@ -12,7 +12,11 @@ import {
   Maximize2,
   X,
   RotateCcw,
+  Zap,
+  Star,
+  Crown,
 } from 'lucide-react';
+import { FAL_MODELS, type FalModel } from '@/lib/fal';
 
 interface UploadedImage {
   file: File;
@@ -21,10 +25,12 @@ interface UploadedImage {
 
 export interface GeneratedAsset {
   id: string;
-  image: string; // base64 data URI
+  image: string; // base64 data URI or external URL
   format: string;
   label: string;
 }
+
+type AIEngine = 'gemini' | 'fal';
 
 interface AssetGeneratorPanelProps {
   onGenerate?: () => void;
@@ -34,8 +40,22 @@ interface AssetGeneratorPanelProps {
   onCaptureCanvas?: () => string | null;
 }
 
+const SPEED_ICONS: Record<FalModel['speed'], React.ReactNode> = {
+  fast: <Zap className="w-3 h-3" />,
+  standard: <Star className="w-3 h-3" />,
+  slow: <Crown className="w-3 h-3" />,
+};
+
+const QUALITY_COLORS: Record<FalModel['quality'], string> = {
+  standard: 'bg-zinc-100 text-zinc-600',
+  high: 'bg-blue-50 text-blue-600',
+  ultra: 'bg-amber-50 text-amber-600',
+};
+
 export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCaptureCanvas }: AssetGeneratorPanelProps) {
   const [mode, setMode] = useState<'full' | 'layout'>('full');
+  const [aiEngine, setAiEngine] = useState<AIEngine>('fal');
+  const [selectedModel, setSelectedModel] = useState<FalModel>(FAL_MODELS[1]); // flux-dev
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | null>(null);
   const [productName, setProductName] = useState('');
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
@@ -140,35 +160,74 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
       if (captured) layoutImageBase64 = captured;
     }
 
+    const enhancedPrompt = [
+      prompt || 'Create a professional marketing campaign asset',
+      selectedMoods.length > 0 ? `Style: ${selectedMoods.join(', ')}` : '',
+      productName ? `Product: ${productName}` : '',
+    ].filter(Boolean).join('. ');
+
     const results: GeneratedAsset[] = [];
 
     for (const fmt of selectedFormats) {
       try {
-        const res = await fetch('/api/assets/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: [
-              prompt || 'Create a professional marketing campaign asset',
-              selectedMoods.length > 0 ? `Style: ${selectedMoods.join(', ')}` : '',
-              productName ? `Product: ${productName}` : '',
-            ].filter(Boolean).join('. '),
-            brandDna,
-            productImageBase64,
-            layoutImageBase64: mode === 'full' ? layoutImageBase64 : undefined,
-            format: { id: fmt.id, label: fmt.label },
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.image) {
-            results.push({
-              id: `${fmt.id}-${Date.now()}`,
-              image: data.image.startsWith('data:') ? data.image : `data:image/png;base64,${data.image}`,
+        if (aiEngine === 'fal') {
+          // Fal AI route
+          const res = await fetch('/api/media/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: enhancedPrompt,
+              modelId: selectedModel.id,
               format: fmt.id,
-              label: fmt.label,
-            });
+              numImages: 1,
+              brandDna: brandDna ? {
+                colors: brandDna.colors,
+                tone: brandDna.tone,
+              } : undefined,
+              inputImageUrl: selectedModel.id === 'flux-kontext' && productImageBase64
+                ? productImageBase64 : undefined,
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const firstImage = data.images?.[0];
+            if (firstImage?.url) {
+              results.push({
+                id: `${fmt.id}-${Date.now()}`,
+                image: firstImage.url,
+                format: fmt.id,
+                label: fmt.label,
+              });
+            }
+          } else {
+            const err = await res.json().catch(() => ({}));
+            console.error(`Fal AI generation failed for ${fmt.id}:`, err);
+          }
+        } else {
+          // OpenRouter (Gemini) route
+          const res = await fetch('/api/assets/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: enhancedPrompt,
+              brandDna,
+              productImageBase64,
+              layoutImageBase64: mode === 'full' ? layoutImageBase64 : undefined,
+              format: { id: fmt.id, label: fmt.label },
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.image) {
+              results.push({
+                id: `${fmt.id}-${Date.now()}`,
+                image: data.image.startsWith('data:') ? data.image : `data:image/png;base64,${data.image}`,
+                format: fmt.id,
+                label: fmt.label,
+              });
+            }
           }
         }
       } catch (err) {
@@ -179,7 +238,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
     if (results.length > 0) {
       onResults?.(results);
     }
-  }, [onGenerate, onResults, formats, prompt, productName, selectedMoods, uploadedImage, mode, onCaptureCanvas]);
+  }, [onGenerate, onResults, formats, prompt, productName, selectedMoods, uploadedImage, mode, onCaptureCanvas, aiEngine, selectedModel]);
 
   return (
     <aside className="w-80 bg-white border-r border-zinc-200 flex flex-col flex-shrink-0 z-10 overflow-y-auto">
@@ -222,6 +281,73 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
       </div>
 
       <div className="flex-1 p-4 flex flex-col gap-6">
+        {/* AI Engine Selection */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-medium text-zinc-700">AI Engine</label>
+          <div className="bg-zinc-100 p-1 rounded-lg flex items-center text-xs font-medium">
+            <button
+              onClick={() => setAiEngine('fal')}
+              className={`flex-1 py-1.5 text-center transition-all rounded-md ${
+                aiEngine === 'fal'
+                  ? 'text-zinc-900 bg-white shadow-sm border border-zinc-200/50'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+            >
+              Fal AI
+            </button>
+            <button
+              onClick={() => setAiEngine('gemini')}
+              className={`flex-1 py-1.5 text-center transition-all rounded-md ${
+                aiEngine === 'gemini'
+                  ? 'text-zinc-900 bg-white shadow-sm border border-zinc-200/50'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+            >
+              Gemini
+            </button>
+          </div>
+
+          {/* Fal AI Model Cards */}
+          {aiEngine === 'fal' && (
+            <div className="flex flex-col gap-1.5 mt-1">
+              {FAL_MODELS.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() => setSelectedModel(model)}
+                  className={`flex items-center gap-2.5 p-2 border rounded-lg text-left transition-all ${
+                    selectedModel.id === model.id
+                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-medium truncate">{model.nameKo}</div>
+                    <div className={`text-[9px] truncate ${selectedModel.id === model.id ? 'text-zinc-400' : 'text-zinc-400'}`}>
+                      {model.name}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                      selectedModel.id === model.id ? 'bg-white/20 text-white' : QUALITY_COLORS[model.quality]
+                    }`}>
+                      {SPEED_ICONS[model.speed]}
+                      {model.quality}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {aiEngine === 'gemini' && (
+            <p className="text-[10px] text-zinc-400 mt-1">
+              Gemini 3 Pro — layout reference + brand tone 지원
+            </p>
+          )}
+        </div>
+
+        <div className="w-full h-px bg-zinc-100" />
+
         {/* Image Upload */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-medium text-zinc-700">Subject / Product Image</label>

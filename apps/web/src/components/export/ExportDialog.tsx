@@ -15,7 +15,7 @@ import {
 import { useStudio } from '@/contexts/studio-context';
 import { cn } from '@/lib/utils';
 
-type ExportFormat = 'png' | 'json' | 'svg';
+type ExportFormat = 'png' | 'json' | 'svg' | 'ai-images';
 
 interface ExportOption {
   id: ExportFormat;
@@ -24,11 +24,18 @@ interface ExportOption {
   icon: typeof FileImage;
 }
 
-const EXPORT_OPTIONS: ExportOption[] = [
+interface GeneratedAssetRef {
+  id: string;
+  image: string;
+  format: string;
+  label: string;
+}
+
+const BASE_EXPORT_OPTIONS: ExportOption[] = [
   {
     id: 'png',
     label: 'PNG Image',
-    description: 'High-resolution PNG export',
+    description: 'High-resolution canvas PNG export',
     icon: FileImage,
   },
   {
@@ -49,14 +56,29 @@ interface ExportDialogProps {
   open: boolean;
   onClose: () => void;
   stageRef?: React.RefObject<Konva.Stage | null>;
+  generatedAssets?: GeneratedAssetRef[];
 }
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error';
 
-export function ExportDialog({ open, onClose, stageRef }: ExportDialogProps) {
+export function ExportDialog({ open, onClose, stageRef, generatedAssets }: ExportDialogProps) {
   const design = useStudio((s) => s.design);
 
-  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('png');
+  const hasAiImages = generatedAssets && generatedAssets.length > 0;
+  const exportOptions: ExportOption[] = hasAiImages
+    ? [
+        {
+          id: 'ai-images',
+          label: 'AI Generated Images',
+          description: `${generatedAssets.length}개 이미지 다운로드`,
+          icon: Package,
+        },
+        ...BASE_EXPORT_OPTIONS,
+      ]
+    : BASE_EXPORT_OPTIONS;
+
+  const defaultFormat: ExportFormat = hasAiImages ? 'ai-images' : 'png';
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>(defaultFormat);
   const [status, setStatus] = useState<ExportStatus>('idle');
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -71,7 +93,35 @@ export function ExportDialog({ open, onClose, stageRef }: ExportDialogProps) {
     try {
       setProgress(20);
 
-      if (selectedFormat === 'json') {
+      if (selectedFormat === 'ai-images' && generatedAssets && generatedAssets.length > 0) {
+        // Download AI generated images
+        const total = generatedAssets.length;
+        for (let i = 0; i < total; i++) {
+          const asset = generatedAssets[i];
+          setProgress(20 + Math.round(((i + 1) / total) * 70));
+
+          try {
+            const response = await fetch(asset.image);
+            const blob = await response.blob();
+            const ext = blob.type.includes('svg') ? 'svg' : 'png';
+            downloadBlob(blob, `${design.meta.name}-${asset.format}-${i + 1}.${ext}`);
+          } catch {
+            // For data URIs that fail fetch, try direct download
+            const link = document.createElement('a');
+            link.href = asset.image;
+            link.download = `${design.meta.name}-${asset.format}-${i + 1}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+
+          // Small delay between downloads to prevent browser blocking
+          if (i < total - 1) {
+            await new Promise((r) => setTimeout(r, 300));
+          }
+        }
+        setProgress(100);
+      } else if (selectedFormat === 'json') {
         // Export as JSON (client-side)
         const blob = new Blob([JSON.stringify(design, null, 2)], {
           type: 'application/json',
@@ -89,6 +139,14 @@ export function ExportDialog({ open, onClose, stageRef }: ExportDialogProps) {
         const { width, height } = design.canvas;
         const stage = stageRef.current;
 
+        // Reset viewport for clean capture
+        const oldScale = { x: stage.scaleX(), y: stage.scaleY() };
+        const oldPos = { x: stage.x(), y: stage.y() };
+        stage.scaleX(1);
+        stage.scaleY(1);
+        stage.x(0);
+        stage.y(0);
+
         setProgress(50);
         const dataUrl = stage.toDataURL({
           x: 0,
@@ -97,6 +155,13 @@ export function ExportDialog({ open, onClose, stageRef }: ExportDialogProps) {
           height,
           pixelRatio: 2, // 2x for high-res export
         });
+
+        // Restore viewport
+        stage.scaleX(oldScale.x);
+        stage.scaleY(oldScale.y);
+        stage.x(oldPos.x);
+        stage.y(oldPos.y);
+
         setProgress(80);
 
         // Convert data URL to blob and download
@@ -149,7 +214,7 @@ export function ExportDialog({ open, onClose, stageRef }: ExportDialogProps) {
         error instanceof Error ? error.message : 'Export failed'
       );
     }
-  }, [design, selectedFormat, onClose, stageRef]);
+  }, [design, selectedFormat, onClose, stageRef, generatedAssets]);
 
   if (!open) return null;
 
@@ -184,7 +249,7 @@ export function ExportDialog({ open, onClose, stageRef }: ExportDialogProps) {
               </p>
 
               <div className="space-y-2">
-                {EXPORT_OPTIONS.map((option) => (
+                {exportOptions.map((option) => (
                   <button
                     key={option.id}
                     onClick={() => setSelectedFormat(option.id)}

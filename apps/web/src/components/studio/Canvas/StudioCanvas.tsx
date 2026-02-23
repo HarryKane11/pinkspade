@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { Stage, Layer, Rect } from 'react-konva';
 import type Konva from 'konva';
 import { useStudio, useStudioActions } from '@/contexts/studio-context';
@@ -18,6 +18,18 @@ interface StudioCanvasProps {
   stageRef?: React.RefObject<Konva.Stage | null>;
 }
 
+interface SelectionRectState {
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
+}
+
+const DRAG_THRESHOLD = 5; // px minimum to count as drag vs click
+
 export function StudioCanvas({ containerRef, stageRef: externalStageRef }: StudioCanvasProps) {
   const internalStageRef = useRef<Konva.Stage>(null);
   const stageRef = externalStageRef ?? internalStageRef;
@@ -27,8 +39,11 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
   const selection = useStudio((s) => s.selection);
   const activeTool = useStudio((s) => s.activeTool);
 
+  const [selectionRect, setSelectionRect] = useState<SelectionRectState | null>(null);
+
   const {
     selectLayer,
+    selectLayers,
     deselectAll,
     updateLayer,
     addLayer,
@@ -57,20 +72,31 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
     return () => resizeObserver.disconnect();
   }, [containerRef, design, fitToCanvas]);
 
+  // Convert screen pointer to canvas coordinates
+  const pointerToCanvas = useCallback(
+    (pointer: { x: number; y: number }) => ({
+      x: (pointer.x - viewport.offsetX) / viewport.zoom,
+      y: (pointer.y - viewport.offsetY) / viewport.zoom,
+    }),
+    [viewport]
+  );
+
   // Handle stage click: create layers for text/shape tools, deselect otherwise
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       const stage = e.target.getStage();
       if (e.target !== stage) return;
 
+      // If a drag selection just happened, don't process as click
+      if (selectionRect && (selectionRect.width > DRAG_THRESHOLD || selectionRect.height > DRAG_THRESHOLD)) {
+        return;
+      }
+
       if (activeTool === 'text' || activeTool === 'shape') {
         const pointer = stage?.getPointerPosition();
         if (!pointer) return;
 
-        // Convert screen coords to canvas coords
-        const canvasX = (pointer.x - viewport.offsetX) / viewport.zoom;
-        const canvasY = (pointer.y - viewport.offsetY) / viewport.zoom;
-
+        const { x: canvasX, y: canvasY } = pointerToCanvas(pointer);
         const id = crypto.randomUUID();
 
         if (activeTool === 'text') {
@@ -98,8 +124,92 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
 
       deselectAll();
     },
-    [activeTool, viewport, addLayer, selectLayer, setActiveTool, deselectAll]
+    [activeTool, pointerToCanvas, addLayer, selectLayer, setActiveTool, deselectAll, selectionRect]
   );
+
+  // --- Rubber-band drag selection ---
+
+  const handleMouseDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (activeTool !== 'select') return;
+
+      const stage = e.target.getStage();
+      // Only start drag selection on empty stage area (not on layers)
+      if (e.target !== stage) return;
+
+      const pointer = stage?.getPointerPosition();
+      if (!pointer) return;
+
+      const { x, y } = pointerToCanvas(pointer);
+
+      setSelectionRect({
+        startX: x,
+        startY: y,
+        x,
+        y,
+        width: 0,
+        height: 0,
+        visible: true,
+      });
+    },
+    [activeTool, pointerToCanvas]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (!selectionRect?.visible) return;
+
+      const stage = e.target.getStage();
+      const pointer = stage?.getPointerPosition();
+      if (!pointer) return;
+
+      const { x, y } = pointerToCanvas(pointer);
+
+      setSelectionRect((prev) =>
+        prev
+          ? {
+              ...prev,
+              x: Math.min(prev.startX, x),
+              y: Math.min(prev.startY, y),
+              width: Math.abs(x - prev.startX),
+              height: Math.abs(y - prev.startY),
+            }
+          : null
+      );
+    },
+    [selectionRect?.visible, pointerToCanvas]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    if (!selectionRect?.visible || !design) {
+      setSelectionRect(null);
+      return;
+    }
+
+    const rect = selectionRect;
+
+    // Only process as drag selection if the rect is big enough
+    if (rect.width > DRAG_THRESHOLD && rect.height > DRAG_THRESHOLD) {
+      const intersecting = design.layers.filter((layer) => {
+        if (!layer.visible || layer.locked || layer.type === 'background') return false;
+        // AABB intersection test
+        return !(
+          layer.position.x + layer.size.width < rect.x ||
+          layer.position.x > rect.x + rect.width ||
+          layer.position.y + layer.size.height < rect.y ||
+          layer.position.y > rect.y + rect.height
+        );
+      });
+
+      if (intersecting.length > 0) {
+        selectLayers(intersecting.map((l) => l.id));
+      } else {
+        deselectAll();
+      }
+    }
+
+    setSelectionRect(null);
+  }, [selectionRect, design, selectLayers, deselectAll]);
 
   // Handle panning
   const handleDragEnd = useCallback(
@@ -230,11 +340,20 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
       draggable={activeTool === 'pan'}
       onClick={(e) => handleStageClick(e as unknown as Konva.KonvaEventObject<MouseEvent>)}
       onTap={(e) => handleStageClick(e as unknown as Konva.KonvaEventObject<MouseEvent>)}
+      onMouseDown={(e) => handleMouseDown(e as unknown as Konva.KonvaEventObject<MouseEvent>)}
+      onMouseMove={(e) => handleMouseMove(e as unknown as Konva.KonvaEventObject<MouseEvent>)}
+      onMouseUp={handleMouseUp}
       onDragEnd={handleDragEnd}
       onWheel={handleWheel}
       style={{
         backgroundColor: '#f1f5f9',
-        cursor: activeTool === 'text' ? 'text' : activeTool === 'shape' ? 'crosshair' : undefined,
+        cursor: activeTool === 'text'
+          ? 'text'
+          : activeTool === 'shape'
+            ? 'crosshair'
+            : selectionRect?.visible
+              ? 'crosshair'
+              : undefined,
       }}
     >
       <Layer>
@@ -247,6 +366,21 @@ export function StudioCanvas({ containerRef, stageRef: externalStageRef }: Studi
 
         {/* Render all layers in order (first = bottom) */}
         {layers.map(renderLayer)}
+
+        {/* Rubber-band selection rectangle */}
+        {selectionRect?.visible && selectionRect.width > DRAG_THRESHOLD && (
+          <Rect
+            x={selectionRect.x}
+            y={selectionRect.y}
+            width={selectionRect.width}
+            height={selectionRect.height}
+            fill="rgba(236, 72, 153, 0.08)"
+            stroke="#ec4899"
+            strokeWidth={1 / viewport.zoom}
+            dash={[4 / viewport.zoom, 4 / viewport.zoom]}
+            listening={false}
+          />
+        )}
 
         {/* Selection transformer */}
         <SelectionTransformer

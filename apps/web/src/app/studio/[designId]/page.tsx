@@ -338,8 +338,27 @@ function StudioContent() {
   const captureCanvas = useCallback((): string | null => {
     if (!stageRef.current || !storeDesign) return null;
     try {
+      const stage = stageRef.current;
       const { width, height } = storeDesign.canvas;
-      return stageRef.current.toDataURL({ x: 0, y: 0, width, height, pixelRatio: 1 });
+
+      // Temporarily reset viewport to capture clean canvas area
+      const oldScale = { x: stage.scaleX(), y: stage.scaleY() };
+      const oldPos = { x: stage.x(), y: stage.y() };
+
+      stage.scaleX(1);
+      stage.scaleY(1);
+      stage.x(0);
+      stage.y(0);
+
+      const dataUrl = stage.toDataURL({ x: 0, y: 0, width, height, pixelRatio: 1 });
+
+      // Restore original viewport
+      stage.scaleX(oldScale.x);
+      stage.scaleY(oldScale.y);
+      stage.x(oldPos.x);
+      stage.y(oldPos.y);
+
+      return dataUrl;
     } catch {
       return null;
     }
@@ -552,7 +571,7 @@ function StudioContent() {
       </div>
 
       {/* Export dialog */}
-      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} stageRef={stageRef} />
+      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} stageRef={stageRef} generatedAssets={generatedAssets} />
     </div>
   );
 }
