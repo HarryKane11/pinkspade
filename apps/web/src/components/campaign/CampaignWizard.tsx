@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -149,7 +149,23 @@ export function CampaignWizard() {
     router.push('/workspace');
   }, [router]);
 
-  // Step components will be wired in subsequent tasks
+  // Save to sessionStorage on data changes
+  useEffect(() => {
+    sessionStorage.setItem('campaignDraft', JSON.stringify({ step, data }));
+  }, [step, data]);
+
+  // Restore on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('campaignDraft');
+      if (saved) {
+        const { step: savedStep, data: savedData } = JSON.parse(saved);
+        setStep(savedStep);
+        setData(savedData);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const stepContent = [
     <Step1Setup key="step1" data={data} update={update} onNext={next} />,
     <Step2Creative key="step2" data={data} update={update} onNext={next} onBack={back} />,
