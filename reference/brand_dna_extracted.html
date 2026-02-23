@@ -1,0 +1,338 @@
+<html lang="ko" class="antialiased scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrandFlow Studio - Brand DNA Sequence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        zinc: { 50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 850: '#1f1f22', 900: '#18181b', 950: '#09090b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #52525b;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e4e4e7;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d4d8;
+        }
+
+        .noise-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.02;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .landing-gradient {
+            background: radial-gradient(circle at top center, rgba(24, 24, 27, 0.03) 0%, transparent 70%);
+        }
+
+        /* Typography Animations */
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-up {
+            opacity: 0;
+            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        /* Metric Bar Animation */
+        .metric-bar-fill {
+            transform-origin: left;
+            transform: scaleX(0);
+            transition: transform 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .animate-bar {
+            transform: scaleX(1);
+        }
+    </style>
+    <style id="border-gradient-shared-style">
+        [style*="--border-gradient"]::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            padding: 1px;
+            border-radius: var(--border-radius-before, inherit);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            background: var(--border-gradient);
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="w-full overflow-x-hidden text-sm font-normal selection:bg-zinc-200 selection:text-zinc-900 relative">
+
+    <!-- Global Noise & Gradient -->
+    <div class="noise-bg"></div>
+    <div class="absolute inset-0 landing-gradient -z-10 h-screen w-full pointer-events-none"></div>
+
+    <!-- VIEW 2: BRAND DNA DASHBOARD -->
+    <div id="view-dashboard" class="min-h-screen bg-zinc-50/80 relative z-20 pb-16 animate-fade-up">
+        <!-- Dashboard Header -->
+        <header class="h-14 bg-white/50 backdrop-blur-md border-b border-zinc-200/50 sticky top-0 z-50">
+            <div class="max-w-5xl mx-auto px-6 h-full flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-6 h-6 bg-zinc-900 rounded flex items-center justify-center text-white text-xs font-semibold shadow-sm">
+                        BF</div>
+                    <div class="h-4 w-px bg-zinc-200 hidden sm:block"></div>
+                    <span class="text-sm font-medium text-zinc-900 hidden sm:block">Workspace</span>
+                    <iconify-icon icon="solar:alt-arrow-right-linear" width="14"
+                        class="text-zinc-400 hidden sm:block"></iconify-icon>
+                    <span
+                        class="text-sm text-zinc-500 font-mono bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200/60"
+                        id="dash-header-url">example.com</span>
+                </div>
+                <button id="btn-exit-dashboard"
+                    class="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors flex items-center gap-1.5">
+                    <iconify-icon icon="solar:exit-linear" width="14" stroke-width="1.5"></iconify-icon> Exit
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="max-w-5xl mx-auto px-6 py-10 md:py-14">
+
+            <!-- Premium Glass Profile Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-br from-white/90 to-white/40 rounded-3xl pt-6 pr-8 pb-6 pl-8 backdrop-blur-xl gap-x-6 gap-y-6 mb-8 shadow-sm"
+                style="position: relative; --border-gradient: linear-gradient(135deg, rgba(24,24,27,0.06), rgba(24,24,27,0)); --border-radius-before: 1.5rem">
+                <div class="flex items-center gap-5">
+                    <div
+                        class="w-14 h-14 bg-zinc-900 text-white rounded-full flex flex-col items-center justify-center ring-4 ring-white/80 shadow-md">
+                        <iconify-icon icon="solar:dna-linear" width="22" stroke-width="1.5"></iconify-icon>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight text-zinc-900">Brand DNA Sequence
+                        </h1>
+                        <p class="text-xs font-medium text-zinc-500 mt-1">Identity successfully extracted and
+                            synchronized.</p>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:items-end gap-4">
+                    <div class="flex gap-5 text-zinc-900">
+                        <div class="flex flex-col items-start sm:items-end">
+                            <span class="text-xs font-medium uppercase tracking-widest text-zinc-400">Match</span>
+                            <span class="mt-1 text-xl font-semibold tracking-tight">98.4%</span>
+                        </div>
+                        <div class="w-px h-8 bg-zinc-200/80 my-auto"></div>
+                        <div class="flex flex-col items-start sm:items-end">
+                            <span class="text-xs font-medium uppercase tracking-widest text-zinc-400">Tokens</span>
+                            <span class="mt-1 text-xl font-semibold tracking-tight">2,184</span>
+                        </div>
+                    </div>
+                    <button id="btn-open-studio"
+                        class="inline-flex items-center gap-2 text-xs font-semibold text-white bg-zinc-900 rounded-full py-2 px-5 hover:bg-zinc-800 transition shadow-lg shadow-zinc-900/10">
+                        Open Studio
+                        <iconify-icon icon="solar:arrow-right-linear" width="14" stroke-width="1.5"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Glassmorphic Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+
+                <!-- Card 1: Color -->
+                <div class="flex flex-col gap-4 bg-gradient-to-br from-white/90 to-white/40 rounded-3xl p-6 backdrop-blur-xl shadow-sm"
+                    style="position: relative; --border-gradient: linear-gradient(135deg, rgba(24,24,27,0.06), rgba(24,24,27,0)); --border-radius-before: 1.5rem">
+                    <div class="flex items-center justify-between mb-2">
+                        <div
+                            class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                            <iconify-icon icon="solar:palette-linear" width="16" stroke-width="1.5"></iconify-icon>
+                            Color Signature
+                        </div>
+                        <span class="text-xs text-zinc-400 font-mono">Synced</span>
+                    </div>
+
+                    <div
+                        class="flex h-12 w-full rounded-2xl overflow-hidden shadow-inner border border-zinc-200/40 mb-2">
+                        <div class="h-full bg-zinc-900 w-[60%] border-r border-white/20"></div>
+                        <div class="h-full bg-[#FFD700] w-[30%] border-r border-white/20"></div>
+                        <div class="h-full bg-zinc-200 w-[10%]"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 mt-auto">
+                        <div
+                            class="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/60 border border-zinc-100 text-center">
+                            <div class="w-6 h-6 rounded-full bg-zinc-900 shadow-sm border border-black/10"></div>
+                            <span class="text-xs uppercase tracking-widest text-zinc-400">Base</span>
+                            <span class="text-xs font-semibold text-zinc-900">#18181B</span>
+                        </div>
+                        <div
+                            class="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/60 border border-zinc-100 text-center">
+                            <div class="w-6 h-6 rounded-full bg-[#FFD700] shadow-sm border border-black/10"></div>
+                            <span class="text-xs uppercase tracking-widest text-zinc-400">Accent</span>
+                            <span class="text-xs font-semibold text-zinc-900">#FFD700</span>
+                        </div>
+                        <div
+                            class="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/60 border border-zinc-100 text-center">
+                            <div class="w-6 h-6 rounded-full bg-zinc-50 shadow-sm border border-zinc-200"></div>
+                            <span class="text-xs uppercase tracking-widest text-zinc-400">Canvas</span>
+                            <span class="text-xs font-semibold text-zinc-900">#FAFAFA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Typography -->
+                <div class="flex flex-col gap-4 bg-gradient-to-br from-white/90 to-white/40 rounded-3xl p-6 backdrop-blur-xl shadow-sm"
+                    style="position: relative; --border-gradient: linear-gradient(135deg, rgba(24,24,27,0.06), rgba(24,24,27,0)); --border-radius-before: 1.5rem">
+                    <div
+                        class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-2">
+                        <iconify-icon icon="solar:text-linear" width="16" stroke-width="1.5"></iconify-icon>
+                        Typographic Genome
+                    </div>
+
+                    <div class="flex items-center gap-5 mb-4">
+                        <div class="text-6xl font-semibold tracking-tighter text-zinc-900 leading-none">Aa</div>
+                        <div class="flex flex-col">
+                            <h3 class="text-3xl font-semibold tracking-tight text-zinc-900">Inter</h3>
+                            <p class="text-xs font-medium text-zinc-400 mt-1">Sans Serif · 9 Weights</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 mt-auto">
+                        <div class="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-white/60 border border-zinc-100">
+                            <span class="text-xs text-zinc-400 uppercase tracking-widest">Headings</span>
+                            <span class="text-lg font-semibold tracking-tight text-zinc-900 truncate">The quick brown
+                                fox jumps</span>
+                        </div>
+                        <div class="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-white/60 border border-zinc-100">
+                            <span class="text-xs text-zinc-400 uppercase tracking-widest">Body Copy</span>
+                            <span class="text-sm font-normal text-zinc-600 truncate">Sphinx of black quartz, judge my
+                                vow.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Voice -->
+                <div class="flex flex-col gap-4 bg-gradient-to-br from-white/90 to-white/40 rounded-3xl p-6 backdrop-blur-xl shadow-sm"
+                    style="position: relative; --border-gradient: linear-gradient(135deg, rgba(24,24,27,0.06), rgba(24,24,27,0)); --border-radius-before: 1.5rem">
+                    <div class="flex items-center justify-between mb-4">
+                        <div
+                            class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                            <iconify-icon icon="solar:soundwave-linear" width="16" stroke-width="1.5"></iconify-icon>
+                            Voice Resonance
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-5 mt-auto">
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between text-xs uppercase tracking-widest">
+                                <span class="text-zinc-500 font-medium">Professional</span>
+                                <span class="text-zinc-900 font-semibold">85%</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-zinc-200/50 rounded-full overflow-hidden">
+                                <div class="h-full bg-zinc-900 rounded-full metric-bar-fill w-[85%]"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between text-xs uppercase tracking-widest">
+                                <span class="text-zinc-500 font-medium">Minimalist</span>
+                                <span class="text-zinc-900 font-semibold">92%</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-zinc-200/50 rounded-full overflow-hidden">
+                                <div class="h-full bg-zinc-900 rounded-full metric-bar-fill w-[92%]"
+                                    style="transition-delay: 100ms;"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between text-xs uppercase tracking-widest">
+                                <span class="text-zinc-500 font-medium">Energetic</span>
+                                <span class="text-zinc-400 font-semibold">40%</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-zinc-200/50 rounded-full overflow-hidden">
+                                <div class="h-full bg-zinc-300 rounded-full metric-bar-fill w-[40%]"
+                                    style="transition-delay: 200ms;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Application Feature (Dark Mode Vibe) -->
+                <div
+                    class="relative rounded-3xl bg-zinc-900 border border-zinc-800 overflow-hidden flex flex-col p-6 min-h-[260px] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] group">
+                    <div
+                        class="absolute inset-0 bg-[radial-gradient(#3f3f46_1px,transparent_1px)] [background-size:16px_16px] opacity-20">
+                    </div>
+
+                    <div
+                        class="absolute left-6 top-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-400 z-10">
+                        <iconify-icon icon="solar:widget-5-linear" width="16" stroke-width="1.5"></iconify-icon>
+                        Application
+                    </div>
+
+                    <div class="m-auto flex flex-col items-center justify-center gap-5 relative z-10 w-full pt-8">
+                        <div
+                            class="px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs font-semibold text-white uppercase tracking-widest">
+                            DNA Injector Active
+                        </div>
+                        <button
+                            class="px-6 py-3 bg-white text-zinc-900 rounded-full text-sm font-semibold shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)] hover:scale-105 transition-transform flex items-center gap-2">
+                            Generate Assets <iconify-icon icon="solar:magic-stick-3-linear" width="16"
+                                class="text-zinc-400"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Script to animate progress bars on load -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.querySelectorAll('.metric-bar-fill').forEach(bar => {
+                    bar.classList.add('animate-bar');
+                });
+            }, 300);
+        });
+    </script>
+
+</body>
+
+</html>

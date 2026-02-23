@@ -1,0 +1,725 @@
+<html lang="ko" class="antialiased scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - BrandFlow Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&amp;display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        zinc: { 50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 850: '#1f1f22', 900: '#18181b', 950: '#09090b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #52525b;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e4e4e7;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d4d8;
+        }
+
+        .noise-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.02;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .landing-gradient {
+            background: radial-gradient(circle at top center, rgba(24, 24, 27, 0.03) 0%, transparent 70%);
+        }
+
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-up {
+            opacity: 0;
+            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .animate-slide-in-right {
+            animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .pulse-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            box-shadow: 0 0 0 0 rgba(24, 24, 27, 0.2);
+            animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(24, 24, 27, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(24, 24, 27, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(24, 24, 27, 0);
+            }
+        }
+    </style>
+</head>
+
+<body class="w-full overflow-x-hidden text-base font-light selection:bg-zinc-200 selection:text-zinc-900 relative">
+
+    <!-- Setup / Extraction Overlay -->
+    <div id="setup-overlay"
+        class="fixed inset-0 z-[100] bg-white/95 backdrop-blur-xl opacity-0 pointer-events-none transition-all duration-500 flex items-center justify-center p-6">
+        <div class="w-full max-w-[480px] bg-white border border-zinc-200/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] rounded-2xl p-8 md:p-10 relative transform translate-y-8 transition-all duration-700 ease-out"
+            id="setup-modal">
+
+            <button id="close-setup"
+                class="absolute top-5 right-5 text-zinc-400 hover:text-zinc-900 transition-colors bg-zinc-50 hover:bg-zinc-100 rounded-full w-8 h-8 flex items-center justify-center">
+                <i data-lucide="x" class="w-4 h-4" stroke-width="1.5"></i>
+            </button>
+
+            <!-- State 1: URL Input -->
+            <div id="state-input" class="flex flex-col transition-opacity duration-300">
+                <div
+                    class="w-12 h-12 bg-zinc-50 rounded-xl border border-zinc-200 flex items-center justify-center mb-6 shadow-sm">
+                    <i data-lucide="link-2" class="w-6 h-6 text-zinc-900" stroke-width="1.5"></i>
+                </div>
+                <h2 class="text-3xl font-normal tracking-tight text-zinc-900 mb-2">Start with your website</h2>
+                <p class="text-base text-zinc-500 mb-8 font-extralight leading-relaxed">Enter your URL or product page.
+                    We'll automatically extract your brand's DNA to configure your workspace.</p>
+
+                <form id="url-form" class="relative flex items-center">
+                    <div class="absolute left-4 flex items-center justify-center text-zinc-400">
+                        <i data-lucide="globe" class="w-[18px] h-[18px]" stroke-width="1.5"></i>
+                    </div>
+                    <input type="url" id="url-input" required="" placeholder="https://example.com"
+                        class="w-full pl-12 pr-14 py-3.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-base focus:outline-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 focus:bg-white transition-all placeholder:text-zinc-400 font-normal text-zinc-900"
+                        autocomplete="off">
+                    <button type="submit"
+                        class="absolute right-1.5 p-2.5 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors shadow-sm flex items-center justify-center">
+                        <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.5"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- State 2: Analyzing -->
+            <div id="state-analyzing" class="hidden flex-col">
+                <div class="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 shadow-md relative">
+                    <div class="pulse-ring"></div>
+                    <i data-lucide="wand-2" class="w-[22px] h-[22px] text-white relative z-10 animate-pulse"
+                        stroke-width="1.5"></i>
+                </div>
+                <h2 class="text-3xl font-normal tracking-tight text-zinc-900 mb-2">Extracting Brand DNA</h2>
+                <p class="text-base text-zinc-500 mb-8 font-extralight flex items-center gap-2 truncate">
+                    Analyzing <span id="display-url" class="font-normal text-zinc-900 truncate max-w-[200px]"></span>
+                </p>
+
+                <div class="flex flex-col gap-5">
+                    <!-- Step 1 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-1">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <i data-lucide="loader-2" class="w-3.5 h-3.5 text-zinc-400 animate-spin"
+                                stroke-width="1.5"></i>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1 overflow-hidden">
+                            <span
+                                class="text-base font-normal text-zinc-500 step-text transition-colors duration-300">Scanning
+                                DOM structure</span>
+                            <div
+                                class="hidden text-sm text-zinc-500 font-mono result-content animate-slide-in-right truncate">
+                                Found 14 style definitions</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-2">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <i data-lucide="loader-2" class="w-3.5 h-3.5 text-zinc-400 animate-spin"
+                                stroke-width="1.5"></i>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1">
+                            <span
+                                class="text-base font-normal text-zinc-500 step-text transition-colors duration-300">Extracting
+                                color palette</span>
+                            <div class="hidden flex items-center gap-2 result-content animate-slide-in-right mt-1">
+                                <div class="w-4 h-4 rounded-full bg-zinc-900 shadow-sm border border-black/10"></div>
+                                <div class="w-4 h-4 rounded-full bg-amber-400 shadow-sm border border-black/10"></div>
+                                <div class="w-4 h-4 rounded-full bg-blue-500 shadow-sm border border-black/10"></div>
+                                <div class="w-4 h-4 rounded-full bg-zinc-100 shadow-sm border border-zinc-200"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-3">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <i data-lucide="loader-2" class="w-3.5 h-3.5 text-zinc-400 animate-spin"
+                                stroke-width="1.5"></i>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1">
+                            <span
+                                class="text-base font-normal text-zinc-500 step-text transition-colors duration-300">Identifying
+                                typography</span>
+                            <div class="hidden text-sm text-zinc-900 font-normal result-content animate-slide-in-right">
+                                <span class="bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md">Inter</span>
+                                <span class="text-zinc-400 mx-1">+</span>
+                                <span class="bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md">System
+                                    Sans</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-4">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <i data-lucide="loader-2" class="w-3.5 h-3.5 text-zinc-400 animate-spin"
+                                stroke-width="1.5"></i>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1">
+                            <span
+                                class="text-base font-normal text-zinc-500 step-text transition-colors duration-300">Defining
+                                brand voice</span>
+                            <div class="hidden text-sm text-zinc-600 result-content animate-slide-in-right font-light">
+                                Minimalist, Professional, Confident
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success State -->
+            <div id="state-success" class="hidden flex-col items-center text-center py-4">
+                <div class="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-6 border border-green-100 scale-0 transition-transform duration-500 ease-out"
+                    id="success-icon-wrapper">
+                    <i data-lucide="check-circle-2" class="w-7 h-7 text-green-500" stroke-width="1.5"></i>
+                </div>
+                <h2 class="text-3xl font-normal tracking-tight text-zinc-900 mb-2">Workspace Ready</h2>
+                <p class="text-base text-zinc-500 font-extralight">Your brand assets have been imported successfully.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Global Noise -->
+    <div class="noise-bg"></div>
+    <div class="absolute inset-0 landing-gradient -z-10 h-screen w-full pointer-events-none"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 border-b border-zinc-200/50 bg-white/80 backdrop-blur-md transition-all duration-300"
+        id="main-nav">
+        <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <a href="/" class="font-normal tracking-tighter text-zinc-900 text-lg flex items-center gap-2">
+                    <div class="w-6 h-6 bg-zinc-900 rounded-md flex items-center justify-center text-white text-sm">BF
+                    </div>
+                    BRANDFLOW
+                </a>
+                <div class="hidden md:flex items-center gap-6 text-sm text-zinc-500 font-normal">
+                    <a href="#" class="hover:text-zinc-900 transition-colors">Product</a>
+                    <a href="#" class="text-zinc-900 transition-colors">About</a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="#"
+                    class="text-sm font-normal text-zinc-600 hover:text-zinc-900 transition-colors hidden sm:block">Log
+                    in</a>
+                <button
+                    class="trigger-setup text-sm font-normal bg-zinc-900 text-white px-4 py-2 rounded-full hover:bg-zinc-800 transition-colors shadow-sm">Start
+                    for free</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- About Hero Section -->
+    <section class="pt-32 pb-16 md:pt-48 md:pb-24 px-6 flex flex-col items-center text-center relative z-10">
+        <div class="animate-fade-up inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-50 border border-zinc-200/80 text-sm mb-8 shadow-sm"
+            style="animation-delay: 100ms;">
+            <i data-lucide="users" class="w-4 h-4 text-zinc-400" stroke-width="1.5"></i>
+            <span class="text-zinc-600 font-normal">About BrandFlow</span>
+        </div>
+
+        <h1
+            class="text-5xl md:text-6xl lg:text-7xl font-normal tracking-tighter text-zinc-900 max-w-4xl leading-[1.1] mb-8">
+            <span class="animate-fade-up inline-block" style="animation-delay: 200ms;">Designing</span>
+            <span class="animate-fade-up inline-block" style="animation-delay: 250ms;">the</span>
+            <span class="animate-fade-up inline-block" style="animation-delay: 300ms;">intelligence</span>
+            <br class="hidden md:block">
+            <span class="animate-fade-up inline-block text-zinc-400" style="animation-delay: 350ms;">behind the
+                brand.</span>
+        </h1>
+
+        <p class="animate-fade-up text-lg md:text-xl text-zinc-500 max-w-2xl font-extralight mb-10 leading-relaxed"
+            style="animation-delay: 450ms;">
+            We believe that brand consistency shouldn't bottleneck creativity. Our mission is to automate the mundane
+            constraints of design so creative teams can focus entirely on the extraordinary.
+        </p>
+    </section>
+
+    <!-- Visual Premium Image Divider -->
+    <section
+        class="w-full max-w-[100vw] mx-auto mb-32 relative z-10 flex flex-col items-center overflow-hidden py-16 animate-fade-up"
+        style="animation-delay: 600ms;">
+
+        <!-- Large Background Typography -->
+        <div
+            class="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden opacity-[0.03]">
+            <span
+                class="text-[25vw] font-normal tracking-tighter text-zinc-900 whitespace-nowrap -rotate-6">AESTHETIC</span>
+        </div>
+
+        <div class="relative w-full max-w-6xl px-6 flex justify-center items-center">
+
+            <!-- Slanted Text Left (Foreground) -->
+            <div class="absolute left-2 md:-left-12 top-[15%] md:top-1/4 -rotate-[12deg] z-20 pointer-events-none">
+                <div
+                    class="bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-6 py-3 md:px-10 md:py-4 rounded-full flex items-center gap-3">
+                    <span class="text-xl md:text-4xl font-normal tracking-tighter text-zinc-800">Unbound</span>
+                </div>
+            </div>
+
+            <!-- Image Container -->
+            <div
+                class="w-full aspect-[4/3] md:aspect-[21/9] rounded-3xl overflow-hidden relative shadow-2xl border border-zinc-200/50 transform transition-transform duration-1000 hover:scale-[1.01] z-10 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&amp;w=2564&amp;auto=format&amp;fit=crop"
+                    alt="Textured Aesthetic Vision" class="w-full h-full object-cover">
+                <!-- Subtle noise/overlay for texture blend -->
+                <div
+                    class="absolute inset-0 bg-gradient-to-tr from-zinc-900/10 via-transparent to-transparent mix-blend-multiply">
+                </div>
+                <div class="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-3xl"></div>
+            </div>
+
+            <!-- Slanted Text Right (Foreground) -->
+            <div
+                class="absolute right-2 md:-right-12 bottom-[15%] md:bottom-1/4 -rotate-[12deg] z-20 pointer-events-none">
+                <div
+                    class="bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-6 py-3 md:px-10 md:py-4 rounded-full flex items-center gap-3">
+                    <span class="text-xl md:text-4xl font-normal tracking-tighter text-zinc-800">Imagination</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Manifesto Section -->
+    <section class="py-16 md:py-24 px-6 relative z-10">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
+                <div class="md:col-span-4">
+                    <h2 class="text-sm font-normal text-zinc-400 uppercase tracking-widest sticky top-24">The Problem
+                    </h2>
+                </div>
+                <div class="md:col-span-8 space-y-8 text-lg text-zinc-600 font-extralight leading-relaxed">
+                    <p class="text-xl md:text-2xl font-normal tracking-tight text-zinc-900 leading-snug">
+                        In the modern digital landscape, brands are required to produce an unprecedented volume of
+                        content across countless channels. Yet, the tools used to create this content haven't
+                        fundamentally changed in decades.
+                    </p>
+                    <p>
+                        Creative teams spend more time resizing assets, checking legal guidelines, and replacing copy
+                        than doing actual design work. The result? Creative burnout, compromised brand identity, and
+                        delayed campaigns across the board.
+                    </p>
+                    <p>
+                        BrandFlow was born out of this frustration. We built an intelligent engine that understands your
+                        brand's DNA—typography, color theory, voice, and strict compliance rules—and applies them
+                        automatically to every generation, ensuring absolute perfection at infinite scale.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Values -->
+    <section class="py-24 px-6 bg-zinc-50 border-y border-zinc-200 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl md:text-4xl font-normal tracking-tight text-zinc-900 mb-16 text-center md:text-left">
+                Principles we build by</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Value 1 -->
+                <div
+                    class="p-8 md:p-10 rounded-2xl bg-white border border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-6 text-zinc-900">
+                        <i data-lucide="pen-square" class="w-6 h-6" stroke-width="1.5"></i>
+                    </div>
+                    <h3 class="text-xl font-normal tracking-tight text-zinc-900 mb-4">Creativity unchained</h3>
+                    <p class="text-base text-zinc-500 font-extralight leading-relaxed">AI shouldn't replace designers;
+                        it should replace tedious pixel-pushing. We build tools that amplify human creativity by
+                        removing structural friction.</p>
+                </div>
+
+                <!-- Value 2 -->
+                <div
+                    class="p-8 md:p-10 rounded-2xl bg-white border border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-6 text-zinc-900">
+                        <i data-lucide="shield-check" class="w-6 h-6" stroke-width="1.5"></i>
+                    </div>
+                    <h3 class="text-xl font-normal tracking-tight text-zinc-900 mb-4">Compliance by default</h3>
+                    <p class="text-base text-zinc-500 font-extralight leading-relaxed">Brand safety is non-negotiable.
+                        Our architecture ensures that every generated asset automatically adheres to legal and stylistic
+                        brand guidelines.</p>
+                </div>
+
+                <!-- Value 3 -->
+                <div
+                    class="p-8 md:p-10 rounded-2xl bg-white border border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-6 text-zinc-900">
+                        <i data-lucide="rocket" class="w-6 h-6" stroke-width="1.5"></i>
+                    </div>
+                    <h3 class="text-xl font-normal tracking-tight text-zinc-900 mb-4">Built for infinite scale</h3>
+                    <p class="text-base text-zinc-500 font-extralight leading-relaxed">Whether you need ten variations
+                        or ten thousand, the system adapts dynamically without a single drop in quality or performance.
+                    </p>
+                </div>
+
+                <!-- Value 4 -->
+                <div
+                    class="p-8 md:p-10 rounded-2xl bg-white border border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-6 text-zinc-900">
+                        <i data-lucide="lock" class="w-6 h-6" stroke-width="1.5"></i>
+                    </div>
+                    <h3 class="text-xl font-normal tracking-tight text-zinc-900 mb-4">Privacy &amp; Security</h3>
+                    <p class="text-base text-zinc-500 font-extralight leading-relaxed">Your brand DNA is your most
+                        valuable asset. We employ enterprise-grade encryption to ensure your data and intellectual
+                        property remain entirely yours.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision / Future Roadmap Section -->
+    <section class="py-24 md:py-32 px-6 relative z-10 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <div class="mb-20 flex flex-col items-center text-center">
+                <h2 class="text-sm font-normal text-zinc-400 uppercase tracking-widest mb-4">The Road Ahead</h2>
+                <h3 class="text-4xl md:text-5xl font-normal tracking-tight text-zinc-900 max-w-2xl leading-tight">
+                    Pioneering the next era of aesthetic automation.</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+                <!-- Connecting Line (Desktop) -->
+                <div class="hidden md:block absolute top-[52px] left-[16.66%] right-[16.66%] h-px bg-zinc-200 z-0">
+                </div>
+
+                <!-- Phase 1 -->
+                <div class="relative z-10 flex flex-col items-center text-center group">
+                    <div
+                        class="w-28 h-28 rounded-full bg-white border-8 border-zinc-50 flex items-center justify-center mb-8 shadow-sm group-hover:border-zinc-100 transition-colors">
+                        <div class="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center text-white">
+                            <i data-lucide="scan-line" class="w-6 h-6" stroke-width="1.5"></i>
+                        </div>
+                    </div>
+                    <div class="px-4">
+                        <span class="text-sm font-normal text-zinc-400 tracking-wider uppercase mb-3 block">Phase
+                            01</span>
+                        <h4 class="text-2xl font-normal tracking-tight text-zinc-900 mb-4">Contextual Generation</h4>
+                        <p class="text-base text-zinc-500 font-extralight leading-relaxed">Perfecting static asset
+                            creation by deeply understanding brand guidelines, typography systems, and color theory
+                            semantics.</p>
+                    </div>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="relative z-10 flex flex-col items-center text-center group">
+                    <div
+                        class="w-28 h-28 rounded-full bg-white border-8 border-zinc-50 flex items-center justify-center mb-8 shadow-sm group-hover:border-zinc-100 transition-colors">
+                        <div
+                            class="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-900 border border-zinc-200">
+                            <i data-lucide="boxes" class="w-6 h-6" stroke-width="1.5"></i>
+                        </div>
+                    </div>
+                    <div class="px-4">
+                        <span class="text-sm font-normal text-zinc-400 tracking-wider uppercase mb-3 block">Phase 02 ·
+                            Upcoming</span>
+                        <h4 class="text-2xl font-normal tracking-tight text-zinc-900 mb-4">Spatial &amp; Motion</h4>
+                        <p class="text-base text-zinc-500 font-extralight leading-relaxed">Extending our engine to
+                            natively support 3D environments, complex motion graphics, and dynamic spatial branding.</p>
+                    </div>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="relative z-10 flex flex-col items-center text-center group">
+                    <div
+                        class="w-28 h-28 rounded-full bg-white border-8 border-zinc-50 flex items-center justify-center mb-8 shadow-sm group-hover:border-zinc-100 transition-colors">
+                        <div
+                            class="w-16 h-16 rounded-full bg-white flex items-center justify-center text-zinc-400 border border-zinc-200 border-dashed">
+                            <i data-lucide="sparkles" class="w-6 h-6" stroke-width="1.5"></i>
+                        </div>
+                    </div>
+                    <div class="px-4">
+                        <span class="text-sm font-normal text-zinc-400 tracking-wider uppercase mb-3 block">Phase 03 ·
+                            Horizon</span>
+                        <h4 class="text-2xl font-normal tracking-tight text-zinc-900 mb-4">Predictive Resonance</h4>
+                        <p class="text-base text-zinc-500 font-extralight leading-relaxed">Anticipating cultural shifts
+                            and market trends to automatically evolve and suggest assets that maximize engagement.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="py-32 border-t border-zinc-200 bg-zinc-900 relative z-10 text-center px-6 overflow-hidden">
+        <div class="absolute inset-0 opacity-10"
+            style="background-image: radial-gradient(white 1px, transparent 1px); background-size: 24px 24px;"></div>
+        <div class="max-w-3xl mx-auto relative z-10">
+            <h2 class="text-4xl md:text-6xl font-normal tracking-tighter text-white mb-6">Experience the future of
+                design.</h2>
+            <p class="text-lg md:text-xl text-zinc-400 font-extralight mb-12">Join thousands of teams creating
+                brand-perfect campaigns in seconds.</p>
+            <button
+                class="trigger-setup inline-flex items-center gap-2 text-base font-normal bg-white text-zinc-900 px-10 py-5 rounded-full hover:bg-zinc-100 transition-colors shadow-lg">
+                Start for free today
+                <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.5"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-10 border-t border-zinc-200 bg-white relative z-10">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="font-normal tracking-tighter text-zinc-900 text-base flex items-center gap-2">
+                <div class="w-5 h-5 bg-zinc-900 rounded flex items-center justify-center text-white text-xs scale-75">BF
+                </div>
+                BRANDFLOW
+            </div>
+            <div class="flex items-center gap-8 text-sm text-zinc-500 font-extralight">
+                <a href="#" class="hover:text-zinc-900 transition-colors">Privacy Policy</a>
+                <a href="#" class="hover:text-zinc-900 transition-colors">Terms of Service</a>
+                <a href="#" class="hover:text-zinc-900 transition-colors">Contact</a>
+            </div>
+            <div class="text-sm text-zinc-400 font-extralight">
+                © 2024 BrandFlow Inc. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize standard Lucide icons on load -->
+    <script>
+        lucide.createIcons();
+    </script>
+
+    <!-- Setup Interaction Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('setup-overlay');
+            const modal = document.getElementById('setup-modal');
+            const closeBtn = document.getElementById('close-setup');
+            const triggerBtns = document.querySelectorAll('.trigger-setup');
+
+            const stateInput = document.getElementById('state-input');
+            const stateAnalyzing = document.getElementById('state-analyzing');
+            const stateSuccess = document.getElementById('state-success');
+
+            const urlForm = document.getElementById('url-form');
+            const urlInput = document.getElementById('url-input');
+            const displayUrl = document.getElementById('display-url');
+            const mainNav = document.getElementById('main-nav');
+
+            const steps = [
+                document.getElementById('step-1'),
+                document.getElementById('step-2'),
+                document.getElementById('step-3'),
+                document.getElementById('step-4')
+            ];
+
+            function openModal() {
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.remove('translate-y-8');
+                mainNav.classList.add('-translate-y-full');
+                urlInput.focus();
+            }
+
+            function closeModal() {
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                modal.classList.add('translate-y-8');
+                mainNav.classList.remove('-translate-y-full');
+
+                setTimeout(() => {
+                    stateInput.classList.remove('hidden');
+                    stateAnalyzing.classList.add('hidden');
+                    stateSuccess.classList.add('hidden');
+                    urlForm.reset();
+                    resetSteps();
+                }, 500);
+            }
+
+            function resetSteps() {
+                steps.forEach(step => {
+                    step.classList.add('opacity-50');
+                    const iconWrap = step.querySelector('.step-icon');
+                    iconWrap.className = 'w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5';
+                    iconWrap.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 text-zinc-400 animate-spin" stroke-width="1.5"></i>';
+                    lucide.createIcons({ root: iconWrap });
+
+                    const text = step.querySelector('.step-text');
+                    text.classList.remove('text-zinc-900');
+                    text.classList.add('text-zinc-500');
+
+                    const result = step.querySelector('.result-content');
+                    if (result) {
+                        result.classList.add('hidden');
+                        result.classList.remove('flex');
+                    }
+                });
+                document.getElementById('success-icon-wrapper').classList.remove('scale-100');
+                document.getElementById('success-icon-wrapper').classList.add('scale-0');
+            }
+
+            function completeStep(index) {
+                if (index >= steps.length) return;
+                const step = steps[index];
+
+                step.classList.remove('opacity-50');
+                const iconWrap = step.querySelector('.step-icon');
+                iconWrap.classList.remove('bg-zinc-50', 'border-zinc-200');
+                iconWrap.classList.add('bg-zinc-900', 'border-zinc-900');
+                iconWrap.innerHTML = '<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-white" stroke-width="1.5"></i>';
+                lucide.createIcons({ root: iconWrap });
+
+                const text = step.querySelector('.step-text');
+                text.classList.remove('text-zinc-500');
+                text.classList.add('text-zinc-900');
+
+                const result = step.querySelector('.result-content');
+                if (result) {
+                    if (index === 1) {
+                        result.classList.remove('hidden');
+                        result.classList.add('flex');
+                    } else {
+                        result.classList.remove('hidden');
+                    }
+                }
+            }
+
+            triggerBtns.forEach(btn => btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal();
+            }));
+
+            closeBtn.addEventListener('click', closeModal);
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+
+            urlForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const url = urlInput.value;
+
+                try {
+                    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+                    displayUrl.textContent = urlObj.hostname;
+                } catch {
+                    displayUrl.textContent = url;
+                }
+
+                stateInput.classList.add('hidden');
+                stateAnalyzing.classList.remove('hidden');
+
+                steps[0].classList.remove('opacity-50');
+
+                setTimeout(() => {
+                    completeStep(0);
+                    steps[1].classList.remove('opacity-50');
+                }, 1500);
+
+                setTimeout(() => {
+                    completeStep(1);
+                    steps[2].classList.remove('opacity-50');
+                }, 3000);
+
+                setTimeout(() => {
+                    completeStep(2);
+                    steps[3].classList.remove('opacity-50');
+                }, 4500);
+
+                setTimeout(() => {
+                    completeStep(3);
+                }, 6000);
+
+                setTimeout(() => {
+                    stateAnalyzing.classList.add('hidden');
+                    stateSuccess.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        document.getElementById('success-icon-wrapper').classList.remove('scale-0');
+                        document.getElementById('success-icon-wrapper').classList.add('scale-100');
+                    }, 50);
+
+                    setTimeout(() => {
+                        closeModal();
+                    }, 2000);
+
+                }, 7000);
+            });
+        });
+    </script>
+
+</body>
+
+</html>

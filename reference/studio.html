@@ -1,0 +1,606 @@
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrandFlow Studio - Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&amp;display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        zinc: { 50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8', 400: '#a1a1aa', 500: '#71717a', 600: '#52525b', 700: '#3f3f46', 800: '#27272a', 900: '#18181b', 950: '#09090b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e4e4e7;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d4d8;
+        }
+
+        /* Custom Toggle */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #ffffff;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #18181b;
+        }
+
+        .toggle-checkbox:checked+.toggle-label:after {
+            transform: translateX(100%);
+            border-color: #ffffff;
+        }
+
+        /* Custom Checkbox Pills */
+        .pill-checkbox:checked+label {
+            background-color: #18181b;
+            color: #ffffff;
+            border-color: #18181b;
+        }
+
+        /* Canvas Grid Background */
+        .canvas-bg {
+            background-color: #f4f4f5;
+            background-image: radial-gradient(#d4d4d8 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        /* Editable Layer Bounds */
+        .layer-editable {
+            outline: 1px solid transparent;
+            transition: outline-color 0.2s;
+        }
+
+        .layer-editable:hover {
+            outline-color: #a1a1aa;
+        }
+
+        .layer-selected {
+            outline: 1.5px solid #3b82f6;
+            position: relative;
+        }
+
+        .layer-selected::after,
+        .layer-selected::before,
+        .layer-handle {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border: 1px solid #3b82f6;
+        }
+
+        .layer-selected::before {
+            top: -3px;
+            left: -3px;
+        }
+
+        .layer-selected::after {
+            bottom: -3px;
+            right: -3px;
+        }
+
+        .handle-tr {
+            top: -3px;
+            right: -3px;
+        }
+
+        .handle-bl {
+            bottom: -3px;
+            left: -3px;
+        }
+
+        .handle-r {
+            top: 50%;
+            right: -3px;
+            transform: translateY(-50%);
+        }
+
+        .handle-b {
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Accordion adjustments */
+        details>summary {
+            list-style: none;
+        }
+
+        details>summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details[open] summary~* {
+            animation: slideDown 0.2s ease-out;
+        }
+
+        details[open] summary .arrow-icon {
+            transform: rotate(90deg);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body
+    class="w-full h-screen overflow-hidden bg-white text-zinc-900 font-sans antialiased text-sm font-normal selection:bg-zinc-200 selection:text-zinc-900 flex flex-col">
+
+    <!-- App Header -->
+    <header
+        class="h-14 bg-white border-b border-zinc-200 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-20">
+        <div class="flex items-center gap-6">
+            <div
+                class="font-medium tracking-tight text-zinc-900 text-sm flex items-center gap-2 border-r border-zinc-200 pr-6">
+                <div class="w-6 h-6 bg-zinc-900 rounded-md flex items-center justify-center text-white text-[10px]">BF
+                </div>
+                BRANDFLOW
+            </div>
+
+            <div class="flex items-center gap-2 text-xs text-zinc-500 font-medium">
+                <a href="#" class="hover:text-zinc-900 transition-colors flex items-center gap-1.5">
+                    <iconify-icon icon="solar:folder-with-files-linear" width="14"></iconify-icon>
+                    Acme Corp
+                </a>
+                <span class="text-zinc-300">/</span>
+                <span class="text-zinc-900 flex items-center gap-1.5">
+                    <iconify-icon icon="solar:gallery-minimalistic-linear" width="14"></iconify-icon>
+                    Summer Campaign
+                </span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 mr-4 border-r border-zinc-200 pr-4 hidden sm:flex">
+                <span class="text-xs text-zinc-500 font-medium">Auto-save</span>
+                <iconify-icon icon="solar:cloud-check-linear" width="14" class="text-green-500"></iconify-icon>
+            </div>
+            <button
+                class="text-xs font-medium text-zinc-600 bg-white border border-zinc-200 px-3 py-1.5 rounded-md hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm flex items-center gap-2">
+                <iconify-icon icon="solar:share-linear" width="14"></iconify-icon>
+                Share
+            </button>
+            <button
+                class="text-xs font-medium bg-zinc-900 text-white px-4 py-1.5 rounded-md hover:bg-zinc-800 transition-colors shadow-sm flex items-center gap-2">
+                Export Assets
+                <iconify-icon icon="solar:export-linear" width="14"></iconify-icon>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- Left Sidebar: Generation Configuration -->
+        <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col flex-shrink-0 z-10 overflow-y-auto">
+            <div class="p-4 border-b border-zinc-200 sticky top-0 bg-white/95 backdrop-blur z-10">
+                <h1 class="text-sm font-medium tracking-tight text-zinc-900 mb-3">Asset Generator</h1>
+
+                <!-- Generator Mode Switcher -->
+                <div class="bg-zinc-100 p-1 rounded-lg flex items-center text-xs font-medium relative">
+                    <button
+                        class="flex-1 py-1.5 text-zinc-900 bg-white shadow-sm border border-zinc-200/50 rounded-md text-center transition-all">Full
+                        Image</button>
+                    <button class="flex-1 py-1.5 text-zinc-500 hover:text-zinc-900 text-center transition-all">Layout
+                        &amp; BG</button>
+                </div>
+            </div>
+
+            <div class="flex-1 p-4 flex flex-col gap-6">
+                <!-- Image Upload (Product) -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-medium text-zinc-700">Subject / Product Image</label>
+                    </div>
+                    <div
+                        class="border border-dashed border-zinc-300 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors cursor-pointer group flex flex-col items-center justify-center p-6 text-center h-32">
+                        <div
+                            class="w-8 h-8 rounded-full bg-white border border-zinc-200 shadow-sm flex items-center justify-center mb-2 group-hover:-translate-y-0.5 transition-transform">
+                            <iconify-icon icon="solar:upload-minimalistic-linear" width="16"
+                                class="text-zinc-500"></iconify-icon>
+                        </div>
+                        <span class="text-xs font-medium text-zinc-900">Click to upload</span>
+                        <span class="text-[10px] text-zinc-400 mt-1">PNG, JPG up to 10MB</span>
+                    </div>
+                </div>
+
+                <div class="w-full h-px bg-zinc-100"></div>
+
+                <!-- Campaign Formats -->
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-medium text-zinc-700">Campaign Formats</label>
+                        <span class="text-[10px] text-zinc-400 bg-zinc-100 px-1.5 rounded">Multi</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <!-- Custom Pill Checkboxes -->
+                        <div class="relative">
+                            <input type="checkbox" id="fmt-feed" class="peer hidden pill-checkbox" checked="">
+                            <label for="fmt-feed"
+                                class="flex items-center gap-2 p-2 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-600 cursor-pointer hover:bg-zinc-50 transition-colors">
+                                <iconify-icon icon="solar:gallery-linear" width="14"></iconify-icon>
+                                IG Feed 1:1
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="checkbox" id="fmt-story" class="peer hidden pill-checkbox" checked="">
+                            <label for="fmt-story"
+                                class="flex items-center gap-2 p-2 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-600 cursor-pointer hover:bg-zinc-50 transition-colors">
+                                <iconify-icon icon="solar:smartphone-linear" width="14"></iconify-icon>
+                                Story 9:16
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="checkbox" id="fmt-banner" class="peer hidden pill-checkbox">
+                            <label for="fmt-banner"
+                                class="flex items-center gap-2 p-2 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-600 cursor-pointer hover:bg-zinc-50 transition-colors">
+                                <iconify-icon icon="solar:monitor-linear" width="14"></iconify-icon>
+                                Banner 16:9
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="checkbox" id="fmt-custom" class="peer hidden pill-checkbox">
+                            <label for="fmt-custom"
+                                class="flex items-center gap-2 p-2 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-600 cursor-pointer hover:bg-zinc-50 transition-colors">
+                                <iconify-icon icon="solar:maximize-square-linear" width="14"></iconify-icon>
+                                Custom
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full h-px bg-zinc-100"></div>
+
+                <!-- Generation Prompt -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-medium text-zinc-700 flex items-center gap-1.5">
+                            <iconify-icon icon="solar:magic-stick-3-linear" width="14"
+                                class="text-amber-500"></iconify-icon>
+                            Creative Prompt
+                        </label>
+                        <span class="text-[10px] text-zinc-500 flex items-center gap-1">
+                            <iconify-icon icon="solar:shield-check-linear" width="12"
+                                class="text-green-500"></iconify-icon>
+                            Brand Tone Appied
+                        </span>
+                    </div>
+                    <textarea
+                        class="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-xs text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none resize-none h-24 transition-all placeholder:text-zinc-400"
+                        placeholder="Describe the scene, background, or specific elements you want to include... e.g. 'A sunny beach setting with palm shadows'"></textarea>
+                </div>
+            </div>
+
+            <!-- Sticky Generate Button -->
+            <div class="p-4 border-t border-zinc-200 bg-white sticky bottom-0">
+                <button
+                    class="w-full bg-zinc-900 text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors shadow-sm">
+                    Generate Assets
+                    <iconify-icon icon="solar:stars-linear" width="16"></iconify-icon>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Inner Sidebar: Asset Library & Categories -->
+        <aside
+            class="w-64 bg-zinc-50 border-r border-zinc-200 flex flex-col flex-shrink-0 z-0 overflow-hidden hidden md:flex">
+            <div class="h-12 px-4 border-b border-zinc-200 flex items-center justify-between bg-white/50">
+                <span class="text-xs font-medium text-zinc-900">Generated Results</span>
+                <span class="text-[10px] bg-zinc-200 text-zinc-600 px-1.5 py-0.5 rounded-sm font-medium">12</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
+
+                <!-- Category: IG Feed -->
+                <details class="group" open="">
+                    <summary
+                        class="flex items-center justify-between px-2 py-1.5 hover:bg-zinc-200/50 rounded-md cursor-pointer transition-colors text-xs font-medium text-zinc-700">
+                        <div class="flex items-center gap-2">
+                            <iconify-icon icon="solar:gallery-linear" width="14" class="text-zinc-400"></iconify-icon>
+                            Instagram Feed
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-zinc-400">4 items</span>
+                            <iconify-icon icon="solar:alt-arrow-right-linear" width="12"
+                                class="text-zinc-400 arrow-icon transition-transform"></iconify-icon>
+                        </div>
+                    </summary>
+                    <div class="mt-1 pl-6 pr-2 flex flex-col gap-1 pb-2">
+                        <div
+                            class="flex items-center justify-between p-1.5 rounded-md bg-white border border-zinc-200 shadow-sm cursor-pointer border-l-2 border-l-blue-500">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 bg-zinc-200 rounded overflow-hidden">
+                                    <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d14dc069-558a-4c51-8aad-5cc237f9b61d_800w.jpg"
+                                        class="w-full h-full object-cover">
+                                </div>
+                                <span class="text-xs text-zinc-900 font-medium truncate">Version 1</span>
+                            </div>
+                            <input type="checkbox" class="accent-zinc-900" checked="">
+                        </div>
+                        <div
+                            class="flex items-center justify-between p-1.5 rounded-md hover:bg-zinc-200/50 cursor-pointer border border-transparent">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 bg-zinc-200 rounded overflow-hidden">
+                                    <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/92cff667-f259-4342-a0aa-f51b804f4d5c_800w.webp"
+                                        class="w-full h-full object-cover">
+                                </div>
+                                <span class="text-xs text-zinc-600 truncate">Version 2</span>
+                            </div>
+                            <input type="checkbox" class="accent-zinc-900">
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Category: Stories -->
+                <details class="group" open="">
+                    <summary
+                        class="flex items-center justify-between px-2 py-1.5 hover:bg-zinc-200/50 rounded-md cursor-pointer transition-colors text-xs font-medium text-zinc-700">
+                        <div class="flex items-center gap-2">
+                            <iconify-icon icon="solar:smartphone-linear" width="14"
+                                class="text-zinc-400"></iconify-icon>
+                            Stories (9:16)
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-zinc-400">2 items</span>
+                            <iconify-icon icon="solar:alt-arrow-right-linear" width="12"
+                                class="text-zinc-400 arrow-icon transition-transform"></iconify-icon>
+                        </div>
+                    </summary>
+                    <div class="mt-1 pl-6 pr-2 flex flex-col gap-1 pb-2">
+                        <div
+                            class="flex items-center justify-between p-1.5 rounded-md bg-white border border-zinc-200 shadow-sm cursor-pointer border-l-2 border-l-blue-500">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 bg-zinc-200 rounded overflow-hidden">
+                                    <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/fa51902b-c2a4-4c33-a96e-a8f1ef67edc6_800w.jpg"
+                                        class="w-full h-full object-cover">
+                                </div>
+                                <span class="text-xs text-zinc-900 font-medium truncate">Layout Edit</span>
+                            </div>
+                            <input type="checkbox" class="accent-zinc-900" checked="">
+                        </div>
+                        <div
+                            class="flex items-center justify-between p-1.5 rounded-md hover:bg-zinc-200/50 cursor-pointer border border-transparent">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 bg-zinc-200 rounded overflow-hidden">
+                                    <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/917d6f93-fb36-439a-8c48-884b67b35381_800w.jpg"
+                                        class="w-full h-full object-cover">
+                                </div>
+                                <span class="text-xs text-zinc-600 truncate">Version 1</span>
+                            </div>
+                            <input type="checkbox" class="accent-zinc-900">
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </aside>
+
+        <!-- Main Canvas: Comparison & Editing Area -->
+        <section class="flex-1 flex flex-col min-w-0 bg-white relative">
+
+            <!-- Canvas Toolbar -->
+            <div
+                class="h-12 border-b border-zinc-200 bg-white flex items-center justify-between px-4 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                <div class="flex items-center gap-2 bg-zinc-100 p-1 rounded-md">
+                    <button
+                        class="p-1.5 text-zinc-500 hover:text-zinc-900 rounded hover:bg-white transition-colors flex items-center justify-center"
+                        title="Single View">
+                        <iconify-icon icon="solar:stop-linear" width="16"></iconify-icon>
+                    </button>
+                    <button
+                        class="p-1.5 text-zinc-900 bg-white shadow-sm border border-zinc-200/50 rounded flex items-center justify-center"
+                        title="Compare Mode">
+                        <iconify-icon icon="solar:slider-vertical-minimalistic-linear" width="16"
+                            class="rotate-90"></iconify-icon>
+                    </button>
+                    <button
+                        class="p-1.5 text-zinc-500 hover:text-zinc-900 rounded hover:bg-white transition-colors flex items-center justify-center"
+                        title="Grid View">
+                        <iconify-icon icon="solar:widget-5-linear" width="16"></iconify-icon>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs">
+                    <div class="flex items-center gap-2">
+                        <button class="text-zinc-400 hover:text-zinc-900"><iconify-icon icon="solar:minus-circle-linear"
+                                width="16"></iconify-icon></button>
+                        <span class="text-zinc-600 font-medium font-mono w-10 text-center">85%</span>
+                        <button class="text-zinc-400 hover:text-zinc-900"><iconify-icon icon="solar:add-circle-linear"
+                                width="16"></iconify-icon></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="flex-1 canvas-bg overflow-auto p-8 flex items-start justify-center gap-8 relative">
+
+                <!-- Frame 1: Full Image Generation Result -->
+                <div class="flex flex-col gap-3 group relative shrink-0">
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-xs font-medium text-zinc-900 bg-white border border-zinc-200 px-2 py-0.5 rounded shadow-sm">IG
+                                Feed V1</span>
+                            <span class="text-[10px] text-zinc-500 font-mono">1080x1080</span>
+                        </div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                            <button
+                                class="p-1.5 bg-white border border-zinc-200 rounded text-zinc-600 hover:text-zinc-900 shadow-sm"
+                                title="Regenerate">
+                                <iconify-icon icon="solar:refresh-linear" width="14"></iconify-icon>
+                            </button>
+                            <button
+                                class="p-1.5 bg-white border border-zinc-200 rounded text-zinc-600 hover:text-zinc-900 shadow-sm"
+                                title="Export">
+                                <iconify-icon icon="solar:download-linear" width="14"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        class="w-[360px] h-[360px] bg-zinc-900 shadow-xl border border-zinc-200/80 relative overflow-hidden">
+                        <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d14dc069-558a-4c51-8aad-5cc237f9b61d_800w.jpg"
+                            class="w-full h-full object-cover">
+                        <!-- Watermark/Badge overlay for full image -->
+                        <div
+                            class="absolute top-3 right-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-2.5 py-1 flex items-center gap-1.5">
+                            <iconify-icon icon="solar:magic-stick-3-linear" width="12"
+                                class="text-amber-400"></iconify-icon>
+                            <span class="text-[10px] text-white/90 font-medium tracking-wide">Full Image AI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Frame 2: Background Only + Editable Layout -->
+                <div class="flex flex-col gap-3 group relative shrink-0">
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                                <iconify-icon icon="solar:pen-linear" width="12"></iconify-icon>
+                                Story Layout Edit
+                            </span>
+                            <span class="text-[10px] text-zinc-500 font-mono">1080x1920</span>
+                        </div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                            <button
+                                class="p-1.5 bg-white border border-zinc-200 rounded text-zinc-600 hover:text-zinc-900 shadow-sm">
+                                <iconify-icon icon="solar:refresh-linear" width="14"></iconify-icon>
+                            </button>
+                            <button
+                                class="p-1.5 bg-zinc-900 text-white border border-zinc-900 rounded hover:bg-zinc-800 shadow-sm">
+                                <iconify-icon icon="solar:download-linear" width="14"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        class="w-[360px] h-[640px] bg-zinc-900 shadow-xl border border-zinc-200/80 relative overflow-hidden scale-[0.8] origin-top mt-[-36px]">
+                        <!-- Background generated by AI -->
+                        <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/fa51902b-c2a4-4c33-a96e-a8f1ef67edc6_800w.jpg"
+                            class="absolute inset-0 w-full h-full object-cover opacity-90">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 pointer-events-none">
+                        </div>
+
+                        <!-- AI Generated Editable Text Boxes -->
+                        <div class="absolute top-16 left-8 right-8 layer-editable p-2 cursor-move">
+                            <div class="flex items-center gap-2 mb-1 absolute -top-5 left-0 opacity-0 transition-opacity duration-200"
+                                id="edit-controls-1">
+                                <span
+                                    class="bg-zinc-900 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1">
+                                    <iconify-icon icon="solar:text-linear" width="10"></iconify-icon> Header
+                                </span>
+                            </div>
+                            <h2 class="text-white text-4xl font-medium tracking-tight leading-tight"
+                                contenteditable="true" spellcheck="false">
+                                The Future of<br>Digital <span class="text-purple-400">Motion</span>
+                            </h2>
+                        </div>
+
+                        <!-- Selected/Active Editable Box -->
+                        <div
+                            class="absolute bottom-24 left-8 right-8 layer-selected bg-white/5 backdrop-blur-sm p-3 cursor-move">
+                            <!-- Handles -->
+                            <div class="layer-handle handle-tr"></div>
+                            <div class="layer-handle handle-bl"></div>
+                            <div class="layer-handle handle-r"></div>
+                            <div class="layer-handle handle-b"></div>
+
+                            <!-- Context Menu attached to selection -->
+                            <div
+                                class="absolute -top-10 left-0 bg-white rounded-md shadow-lg border border-zinc-200 flex items-center p-1 gap-1">
+                                <select
+                                    class="text-[10px] font-medium text-zinc-700 bg-transparent outline-none px-1 border-r border-zinc-200 cursor-pointer">
+                                    <option>Inter</option>
+                                    <option>System</option>
+                                </select>
+                                <button
+                                    class="w-6 h-6 flex items-center justify-center text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 rounded"><iconify-icon
+                                        icon="solar:text-bold-linear" width="14"></iconify-icon></button>
+                                <button
+                                    class="w-6 h-6 flex items-center justify-center text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 rounded"><iconify-icon
+                                        icon="solar:text-underline-linear" width="14"></iconify-icon></button>
+                                <div class="w-px h-4 bg-zinc-200 mx-1"></div>
+                                <button
+                                    class="w-6 h-6 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded"
+                                    title="AI Rewrite"><iconify-icon icon="solar:magic-stick-3-linear"
+                                        width="14"></iconify-icon></button>
+                            </div>
+
+                            <p class="text-white/90 text-sm font-normal leading-relaxed" contenteditable="true"
+                                spellcheck="false">
+                                Experience seamless transitions and dynamic backgrounds tailored perfectly to your brand
+                                guidelines.
+                            </p>
+                        </div>
+
+                        <!-- CTA Button Layer -->
+                        <div class="absolute bottom-8 left-8 layer-editable p-1 cursor-move inline-block">
+                            <button
+                                class="bg-white text-zinc-900 text-xs font-medium px-6 py-2.5 rounded-full pointer-events-none">
+                                Swipe Up
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Script to handle interactions -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simple logic to show/hide edit controls on hover for non-selected layers
+            const editableLayers = document.querySelectorAll('.layer-editable');
+            editableLayers.forEach(layer => {
+                layer.addEventListener('mouseenter', () => {
+                    const controls = layer.querySelector('[id^="edit-controls"]');
+                    if (controls) controls.classList.remove('opacity-0');
+                });
+                layer.addEventListener('mouseleave', () => {
+                    const controls = layer.querySelector('[id^="edit-controls"]');
+                    if (controls) controls.classList.add('opacity-0');
+                });
+            });
+        });
+    </script>
+
+</body>
+
+</html>

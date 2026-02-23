@@ -1,0 +1,1058 @@
+<html lang="ko" class="antialiased scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrandFlow Studio - The AI Design Workflow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&amp;display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        zinc: { 50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 850: '#1f1f22', 900: '#18181b', 950: '#09090b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #52525b;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e4e4e7;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d4d8;
+        }
+
+        /* Custom Toggle */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #ffffff;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #18181b;
+        }
+
+        .toggle-checkbox:checked+.toggle-label:after {
+            transform: translateX(100%);
+            border-color: #ffffff;
+        }
+
+        /* Custom Slider */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #18181b;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            cursor: pointer;
+            background: #e4e4e7;
+            border-radius: 1px;
+        }
+
+        .noise-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.02;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Canvas Selection Outline */
+        .layer-selected {
+            outline: 1px solid #3b82f6;
+            position: relative;
+        }
+
+        .layer-selected::after,
+        .layer-selected::before,
+        .layer-handle {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border: 1px solid #3b82f6;
+        }
+
+        .layer-selected::before {
+            top: -3px;
+            left: -3px;
+        }
+
+        .layer-selected::after {
+            bottom: -3px;
+            right: -3px;
+        }
+
+        .handle-tr {
+            top: -3px;
+            right: -3px;
+        }
+
+        .handle-bl {
+            bottom: -3px;
+            left: -3px;
+        }
+
+        .landing-gradient {
+            background: radial-gradient(circle at top center, rgba(24, 24, 27, 0.03) 0%, transparent 70%);
+        }
+
+        /* Typography Animations */
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-up {
+            opacity: 0;
+            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes textCycle {
+
+            0%,
+            5% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            10%,
+            28% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            33%,
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        .cycle-text {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            white-space: nowrap;
+        }
+
+        .cycle-1 {
+            animation: textCycle 7.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+        }
+
+        .cycle-2 {
+            animation: textCycle 7.5s cubic-bezier(0.2, 0.8, 0.2, 1) 2.5s infinite;
+        }
+
+        .cycle-3 {
+            animation: textCycle 7.5s cubic-bezier(0.2, 0.8, 0.2, 1) 5.0s infinite;
+        }
+
+        .cycle-wrapper {
+            position: relative;
+            display: inline-block;
+            min-width: 280px;
+            vertical-align: bottom;
+        }
+
+        @media (min-width: 768px) {
+            .cycle-wrapper {
+                min-width: 440px;
+            }
+        }
+
+        .bento-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .bento-card:hover::after {
+            opacity: 1;
+        }
+
+        /* Brand DNA Extraction Animations */
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .animate-slide-in-right {
+            animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .pulse-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            box-shadow: 0 0 0 0 rgba(24, 24, 27, 0.2);
+            animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(24, 24, 27, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(24, 24, 27, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(24, 24, 27, 0);
+            }
+        }
+    </style>
+</head>
+
+<body class="w-full overflow-x-hidden text-sm font-normal selection:bg-zinc-200 selection:text-zinc-900 relative">
+
+    <!-- Setup / Extraction Overlay -->
+    <div id="setup-overlay"
+        class="fixed inset-0 z-[100] bg-white/95 backdrop-blur-xl opacity-0 pointer-events-none transition-all duration-500 flex items-center justify-center p-6">
+        <div class="w-full max-w-[480px] bg-white border border-zinc-200/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] rounded-2xl p-8 md:p-10 relative transform translate-y-8 transition-all duration-700 ease-out"
+            id="setup-modal">
+
+            <button id="close-setup"
+                class="absolute top-5 right-5 text-zinc-400 hover:text-zinc-900 transition-colors bg-zinc-50 hover:bg-zinc-100 rounded-full w-8 h-8 flex items-center justify-center">
+                <iconify-icon icon="solar:close-linear" width="16"></iconify-icon>
+            </button>
+
+            <!-- State 1: URL Input -->
+            <div id="state-input" class="flex flex-col transition-opacity duration-300">
+                <div
+                    class="w-12 h-12 bg-zinc-50 rounded-xl border border-zinc-200 flex items-center justify-center mb-6 shadow-sm">
+                    <iconify-icon icon="solar:link-minimalistic-linear" width="24" class="text-zinc-900"></iconify-icon>
+                </div>
+                <h2 class="text-2xl font-medium tracking-tight text-zinc-900 mb-2">Start with your website</h2>
+                <p class="text-sm text-zinc-500 mb-8 font-light leading-relaxed">Enter your URL or product page. We'll
+                    automatically extract your brand's DNA to configure your workspace.</p>
+
+                <form id="url-form" class="relative flex items-center">
+                    <div class="absolute left-4 flex items-center justify-center text-zinc-400">
+                        <iconify-icon icon="solar:global-linear" width="18"></iconify-icon>
+                    </div>
+                    <input type="url" id="url-input" required="" placeholder="https://example.com"
+                        class="w-full pl-11 pr-14 py-3.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 focus:bg-white transition-all placeholder:text-zinc-400 font-medium text-zinc-900"
+                        autocomplete="off">
+                    <button type="submit"
+                        class="absolute right-1.5 p-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors shadow-sm flex items-center justify-center">
+                        <iconify-icon icon="solar:arrow-right-linear" width="16"></iconify-icon>
+                    </button>
+                </form>
+            </div>
+
+            <!-- State 2: Analyzing -->
+            <div id="state-analyzing" class="hidden flex-col">
+                <div class="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 shadow-md relative">
+                    <div class="pulse-ring"></div>
+                    <iconify-icon icon="solar:magic-stick-3-linear" width="22"
+                        class="text-white relative z-10 animate-pulse"></iconify-icon>
+                </div>
+                <h2 class="text-2xl font-medium tracking-tight text-zinc-900 mb-2">Extracting Brand DNA</h2>
+                <p class="text-sm text-zinc-500 mb-8 font-light flex items-center gap-2 truncate">
+                    Analyzing <span id="display-url" class="font-medium text-zinc-900 truncate max-w-[200px]"></span>
+                </p>
+
+                <div class="flex flex-col gap-5">
+                    <!-- Step 1 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-1">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <iconify-icon icon="solar:spinner-linear" width="14"
+                                class="text-zinc-400 animate-spin"></iconify-icon>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1 overflow-hidden">
+                            <span
+                                class="text-sm font-medium text-zinc-500 step-text transition-colors duration-300">Scanning
+                                DOM structure</span>
+                            <div
+                                class="hidden text-xs text-zinc-500 font-mono result-content animate-slide-in-right truncate">
+                                Found 14 style definitions</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-2">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <iconify-icon icon="solar:spinner-linear" width="14"
+                                class="text-zinc-400 animate-spin"></iconify-icon>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1">
+                            <span
+                                class="text-sm font-medium text-zinc-500 step-text transition-colors duration-300">Extracting
+                                color palette</span>
+                            <div class="hidden flex items-center gap-2 result-content animate-slide-in-right mt-1">
+                                <div class="w-4 h-4 rounded-full bg-zinc-900 shadow-sm border border-black/10"></div>
+                                <div class="w-4 h-4 rounded-full bg-amber-400 shadow-sm border border-black/10"></div>
+                                <div class="w-4 h-4 rounded-full bg-blue-500 shadow-sm border border-black/10"></div>
+                                <div class="w-4 h-4 rounded-full bg-zinc-100 shadow-sm border border-zinc-200"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-3">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <iconify-icon icon="solar:spinner-linear" width="14"
+                                class="text-zinc-400 animate-spin"></iconify-icon>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1">
+                            <span
+                                class="text-sm font-medium text-zinc-500 step-text transition-colors duration-300">Identifying
+                                typography</span>
+                            <div class="hidden text-xs text-zinc-900 font-medium result-content animate-slide-in-right">
+                                <span class="bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md">Inter</span>
+                                <span class="text-zinc-400 mx-1">+</span>
+                                <span class="bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md">System
+                                    Sans</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="flex items-start gap-4 analysis-step opacity-50 transition-all duration-300"
+                        id="step-4">
+                        <div
+                            class="w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5">
+                            <iconify-icon icon="solar:spinner-linear" width="14"
+                                class="text-zinc-400 animate-spin"></iconify-icon>
+                        </div>
+                        <div class="flex flex-col gap-1.5 flex-1">
+                            <span
+                                class="text-sm font-medium text-zinc-500 step-text transition-colors duration-300">Defining
+                                brand voice</span>
+                            <div class="hidden text-xs text-zinc-600 result-content animate-slide-in-right">
+                                Minimalist, Professional, Confident
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success State -->
+            <div id="state-success" class="hidden flex-col items-center text-center py-4">
+                <div class="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-6 border border-green-100 scale-0 transition-transform duration-500 ease-out"
+                    id="success-icon-wrapper">
+                    <iconify-icon icon="solar:check-circle-bold" width="28" class="text-green-500"></iconify-icon>
+                </div>
+                <h2 class="text-2xl font-medium tracking-tight text-zinc-900 mb-2">Workspace Ready</h2>
+                <p class="text-sm text-zinc-500 font-light">Your brand assets have been imported successfully.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Global Noise -->
+    <div class="noise-bg"></div>
+    <div class="absolute inset-0 landing-gradient -z-10 h-screen w-full pointer-events-none"></div>
+
+    <!-- Landing Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 border-b border-zinc-200/50 bg-white/80 backdrop-blur-md transition-all duration-300"
+        id="main-nav">
+        <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <div class="font-medium tracking-tighter text-zinc-900 text-base flex items-center gap-2">
+                    <div class="w-6 h-6 bg-zinc-900 rounded-md flex items-center justify-center text-white text-xs">BF
+                    </div>
+                    BRANDFLOW
+                </div>
+                <div class="hidden md:flex items-center gap-6 text-xs text-zinc-500 font-medium">
+                    <a href="#features" class="hover:text-zinc-900 transition-colors">Features</a>
+                    <a href="#gallery" class="hover:text-zinc-900 transition-colors">Gallery</a>
+                    <a href="#compliance" class="hover:text-zinc-900 transition-colors">Compliance</a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="#"
+                    class="text-xs font-medium text-zinc-600 hover:text-zinc-900 transition-colors hidden sm:block">Log
+                    in</a>
+                <button
+                    class="trigger-setup text-xs font-medium bg-zinc-900 text-white px-4 py-2 rounded-full hover:bg-zinc-800 transition-colors shadow-sm">Start
+                    for free</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-16 md:pt-48 md:pb-24 px-6 flex flex-col items-center text-center relative z-10">
+        <div class="animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-50 border border-zinc-200/80 text-xs mb-8 shadow-sm"
+            style="animation-delay: 100ms;">
+            <span class="flex h-2 w-2 rounded-full bg-amber-400 relative">
+                <span
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            </span>
+            <span class="text-zinc-600 font-medium">BrandFlow AI 2.0 is now available</span>
+            <iconify-icon icon="solar:arrow-right-linear" width="14" class="text-zinc-400"></iconify-icon>
+        </div>
+
+        <h1
+            class="text-4xl md:text-6xl lg:text-7xl font-medium tracking-tighter text-zinc-900 max-w-4xl leading-tight mb-6 flex flex-wrap justify-center gap-x-3 gap-y-1 md:gap-y-2">
+            <span class="animate-fade-up inline-block" style="animation-delay: 200ms;">Design</span>
+            <span class="animate-fade-up inline-block" style="animation-delay: 250ms;">at</span>
+            <span class="animate-fade-up inline-block" style="animation-delay: 300ms;">the</span>
+            <span class="animate-fade-up inline-block" style="animation-delay: 350ms;">speed</span>
+            <span class="animate-fade-up inline-block" style="animation-delay: 400ms;">of</span>
+            <br class="hidden md:block">
+            <div class="cycle-wrapper h-[1.1em] md:h-[1.2em] animate-fade-up text-left" style="animation-delay: 450ms;">
+                <span class="cycle-text cycle-1 text-zinc-400">artificial thought.</span>
+                <span class="cycle-text cycle-2 text-zinc-400">perfect compliance.</span>
+                <span class="cycle-text cycle-3 text-zinc-400">infinite scale.</span>
+                <span class="opacity-0 pointer-events-none">perfect compliance.</span>
+            </div>
+        </h1>
+
+        <p class="animate-fade-up text-base md:text-lg text-zinc-500 max-w-2xl font-light mb-10 leading-relaxed"
+            style="animation-delay: 600ms;">
+            The intelligent design studio that automatically ensures brand compliance, generates context-aware copy, and
+            adapts perfectly to any format.
+        </p>
+
+        <div class="animate-fade-up flex items-center gap-4 mb-20" style="animation-delay: 750ms;">
+            <!-- Changed to trigger modal -->
+            <button
+                class="trigger-setup text-sm font-medium bg-zinc-900 text-white px-6 py-3 rounded-full hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/10 flex items-center gap-2">
+                Start designing
+                <iconify-icon icon="solar:arrow-right-linear" width="16"></iconify-icon>
+            </button>
+            <a href="#"
+                class="text-sm font-medium text-zinc-600 bg-white border border-zinc-200 px-6 py-3 rounded-full hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm flex items-center gap-2">
+                <iconify-icon icon="solar:play-circle-linear" width="18"></iconify-icon>
+                Watch demo
+            </a>
+        </div>
+
+        <!-- Interactive Product Mockup Wrapper -->
+        <div id="editor-mockup"
+            class="animate-fade-up w-full max-w-[1200px] mx-auto rounded-xl md:rounded-2xl border border-zinc-200/80 bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden relative group"
+            style="animation-delay: 900ms;">
+            <div
+                class="h-10 bg-zinc-50 border-b border-zinc-200 flex items-center px-4 gap-2 absolute top-0 w-full z-30">
+                <div class="w-2.5 h-2.5 rounded-full bg-zinc-300"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-zinc-300"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-zinc-300"></div>
+                <div class="mx-auto text-xs text-zinc-400 font-medium font-mono flex items-center gap-2">
+                    <iconify-icon icon="solar:lock-keyhole-linear" width="12"></iconify-icon>
+                    studio.brandflow.com
+                </div>
+            </div>
+
+            <div class="flex h-[600px] w-full pt-10 text-left bg-zinc-100">
+                <nav
+                    class="w-14 border-r border-zinc-200 bg-white flex flex-col items-center py-4 z-10 flex-shrink-0 hidden md:flex">
+                    <div class="mb-8 font-medium tracking-tighter text-zinc-900 text-base">BF</div>
+                    <div class="flex flex-col gap-4 w-full px-2">
+                        <button
+                            class="p-2 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors flex items-center justify-center group relative">
+                            <iconify-icon icon="solar:home-2-linear" width="20" stroke-width="1.5"></iconify-icon>
+                        </button>
+                        <button
+                            class="p-2 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors flex items-center justify-center group relative">
+                            <iconify-icon icon="solar:box-linear" width="20" stroke-width="1.5"></iconify-icon>
+                        </button>
+                        <button
+                            class="p-2 rounded-md bg-zinc-100 text-zinc-900 flex items-center justify-center group relative shadow-sm border border-zinc-200/50">
+                            <iconify-icon icon="solar:layers-minimalistic-linear" width="20"
+                                stroke-width="1.5"></iconify-icon>
+                        </button>
+                    </div>
+                </nav>
+
+                <aside class="w-60 border-r border-zinc-200 bg-white flex flex-col z-10 flex-shrink-0 hidden lg:flex">
+                    <div class="h-12 border-b border-zinc-200 flex items-center px-4 justify-between">
+                        <span class="text-xs font-medium text-zinc-900 tracking-wide uppercase">Layers</span>
+                        <button class="text-zinc-400 hover:text-zinc-900 transition-colors"><iconify-icon
+                                icon="solar:add-circle-linear" width="16"></iconify-icon></button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
+                        <div
+                            class="flex items-center gap-3 px-3 py-2 rounded-md bg-zinc-50 border border-zinc-200 text-zinc-900 cursor-pointer shadow-sm">
+                            <iconify-icon icon="solar:text-linear" width="16" class="text-zinc-500"></iconify-icon>
+                            <span class="text-xs truncate flex-1 font-medium">Headline Copy</span>
+                            <iconify-icon icon="solar:eye-linear" width="14" class="text-zinc-400"></iconify-icon>
+                        </div>
+                        <div
+                            class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-zinc-50 cursor-pointer transition-colors group">
+                            <iconify-icon icon="solar:gallery-minimalistic-linear" width="16"
+                                class="text-zinc-400"></iconify-icon>
+                            <span class="text-xs text-zinc-600 truncate flex-1">Product Cutout</span>
+                        </div>
+                        <div
+                            class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-zinc-50 cursor-pointer transition-colors group">
+                            <iconify-icon icon="solar:square-bottom-down-linear" width="16"
+                                class="text-zinc-400"></iconify-icon>
+                            <span class="text-xs text-zinc-600 truncate flex-1">Gradient Overlay</span>
+                        </div>
+                    </div>
+                </aside>
+
+                <main class="flex-1 flex flex-col relative overflow-hidden z-0">
+                    <header
+                        class="h-12 flex items-center justify-between px-4 border-b border-zinc-200 bg-white/80 backdrop-blur-md absolute top-0 w-full z-20">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium text-zinc-900 tracking-tight">Summer Launch IG Feed</span>
+                            <span
+                                class="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200 hidden sm:inline-block">Draft</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="hidden sm:flex items-center gap-2">
+                                <span class="text-xs text-zinc-500">Compliance Guard</span>
+                                <div class="relative inline-block w-8 align-middle">
+                                    <input type="checkbox"
+                                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 border-white appearance-none cursor-pointer z-10 top-0 left-0 checked:bg-zinc-900 checked:border-zinc-900 transition-all"
+                                        checked="">
+                                    <label
+                                        class="toggle-label block overflow-hidden h-4 rounded-full bg-zinc-200 cursor-pointer transition-colors"></label>
+                                </div>
+                            </div>
+                            <button
+                                class="text-xs px-4 py-1.5 rounded-md bg-zinc-900 text-white font-medium hover:bg-zinc-800 transition-colors flex items-center gap-2 shadow-sm">
+                                Export <iconify-icon icon="solar:export-linear" width="14"></iconify-icon>
+                            </button>
+                        </div>
+                    </header>
+
+                    <div class="flex-1 flex items-center justify-center p-8 mt-12 overflow-auto relative">
+                        <div class="absolute inset-0 z-0 opacity-20 pointer-events-none"
+                            style="background-image: radial-gradient(#d4d4d8 1px, transparent 1px); background-size: 20px 20px;">
+                        </div>
+
+                        <div
+                            class="w-[320px] h-[400px] md:w-[360px] md:h-[450px] bg-zinc-900 relative shadow-2xl ring-1 ring-zinc-200/50 flex-shrink-0 z-10">
+                            <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d14dc069-558a-4c51-8aad-5cc237f9b61d_800w.jpg"
+                                class="absolute inset-0 w-full h-full object-cover opacity-60" alt="Background">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent">
+                            </div>
+
+                            <div
+                                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] w-40 h-40 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-md border border-white/20 rounded-full shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                                <iconify-icon icon="solar:box-minimalistic-linear" width="48"
+                                    class="text-white/80"></iconify-icon>
+                            </div>
+
+                            <div
+                                class="absolute bottom-16 left-6 right-6 layer-selected bg-white/5 backdrop-blur-sm p-2 -m-2 rounded">
+                                <div class="layer-handle handle-tr"></div>
+                                <div class="layer-handle handle-bl"></div>
+                                <div
+                                    class="absolute -top-3 -right-3 bg-red-500/10 border border-red-500/50 text-red-500 rounded-full w-5 h-5 flex items-center justify-center shadow-sm">
+                                    <iconify-icon icon="solar:danger-triangle-linear" width="12"></iconify-icon>
+                                </div>
+                                <h2
+                                    class="text-2xl md:text-3xl font-medium tracking-tight text-white leading-tight break-words">
+                                    올여름을 위한<br>가장 <span class="text-amber-400">완벽한</span> 선택
+                                </h2>
+                            </div>
+
+                            <div class="absolute bottom-6 left-6 right-6 flex items-center gap-2 opacity-80">
+                                <iconify-icon icon="solar:lock-password-linear" width="12"
+                                    class="text-zinc-500"></iconify-icon>
+                                <p class="text-[10px] text-zinc-300 font-normal tracking-wide uppercase">BrandFlow
+                                    Official</p>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <aside
+                    class="w-72 border-l border-zinc-200 bg-white flex flex-col overflow-y-auto z-10 flex-shrink-0 hidden md:flex">
+                    <div class="flex h-12 border-b border-zinc-200">
+                        <button
+                            class="flex-1 flex items-center justify-center text-xs text-zinc-900 font-medium border-b-2 border-zinc-900">Design</button>
+                    </div>
+                    <div class="p-4 flex flex-col gap-5">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-medium text-zinc-700">Typography</span>
+                                <iconify-icon icon="solar:text-square-linear" width="14"
+                                    class="text-zinc-400"></iconify-icon>
+                            </div>
+                            <select
+                                class="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 text-xs rounded-md px-3 py-2 appearance-none outline-none">
+                                <option>Inter</option>
+                            </select>
+                        </div>
+
+                        <div class="w-full h-px bg-zinc-100"></div>
+
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <iconify-icon icon="solar:magic-stick-3-linear" width="14"
+                                        class="text-amber-500"></iconify-icon>
+                                    <span class="text-xs font-medium text-zinc-700">AI Copy Editor</span>
+                                </div>
+                                <span
+                                    class="text-[10px] text-zinc-500 border border-zinc-200 px-1.5 rounded bg-zinc-50">Flash</span>
+                            </div>
+                            <textarea
+                                class="w-full h-20 bg-zinc-50 border border-zinc-200 text-zinc-900 text-xs rounded-md p-3 outline-none resize-none">올여름을 위한
+가장 완벽한 선택</textarea>
+                            <div class="bg-red-50 border border-red-100 rounded-md p-2.5 flex items-start gap-2">
+                                <iconify-icon icon="solar:shield-warning-linear" width="14"
+                                    class="text-red-500 mt-0.5 flex-shrink-0"></iconify-icon>
+                                <div class="flex flex-col gap-0.5">
+                                    <span class="text-xs text-red-600 font-medium">Compliance Alert</span>
+                                    <span class="text-[10px] text-zinc-600 leading-tight">과장 광고 소지가 있는 단어 ('완벽한')가
+                                        감지되었습니다.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <!-- Logo Cloud -->
+    <section class="py-10 border-y border-zinc-200 bg-zinc-50/50 relative z-10">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col items-center">
+            <p class="text-xs font-medium text-zinc-400 tracking-wider uppercase mb-8">Trusted by modern creative teams
+            </p>
+            <div class="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale">
+                <span class="text-lg font-medium tracking-tighter text-zinc-900">ACME CORP</span>
+                <span class="text-lg font-medium tracking-tighter text-zinc-900">GLOBALTECH</span>
+                <span class="text-lg font-medium tracking-tighter text-zinc-900">NEXUS</span>
+                <span class="text-lg font-medium tracking-tighter text-zinc-900">HORIZON</span>
+                <span class="text-lg font-medium tracking-tighter text-zinc-900">LUMINA</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Generated Assets Showcase Gallery -->
+    <section id="gallery" class="py-24 md:py-32 bg-white relative z-10 overflow-hidden">
+        <div
+            class="max-w-7xl mx-auto px-6 mb-16 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div class="max-w-xl">
+                <h2 class="text-3xl md:text-4xl font-medium tracking-tighter text-zinc-900 mb-4">One source of truth.
+                    <br class="hidden sm:block">Infinite possibilities.</h2>
+                <p class="text-base text-zinc-500 font-light leading-relaxed">Instantly generate high-converting,
+                    brand-compliant variations for any ad network, format, or campaign goal.</p>
+            </div>
+            <a href="#"
+                class="inline-flex items-center justify-center gap-2 text-xs font-medium text-zinc-900 bg-white border border-zinc-200 px-5 py-2.5 rounded-full hover:bg-zinc-50 transition-colors shadow-sm whitespace-nowrap">
+                View asset library
+                <iconify-icon icon="solar:arrow-right-linear" width="14"></iconify-icon>
+            </a>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 md:grid-rows-[240px_240px] gap-4">
+            <!-- Asset 1 -->
+            <div
+                class="md:col-span-1 md:row-span-2 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-[3/4] md:aspect-auto shadow-sm">
+                <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/917d6f93-fb36-439a-8c48-884b67b35381_800w.jpg"
+                    alt="Silhouette profile"
+                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                <div class="absolute top-4 left-4 z-10 flex gap-2">
+                    <span
+                        class="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">
+                        <iconify-icon icon="solar:smartphone-linear" width="12"></iconify-icon> Story 9:16
+                    </span>
+                </div>
+                <div
+                    class="absolute bottom-4 left-4 right-4 z-10 opacity-0 transform translate-y-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0">
+                    <div
+                        class="flex items-center gap-2 text-[10px] text-white/90 mb-1 font-medium tracking-wide uppercase">
+                        <iconify-icon icon="solar:shield-check-linear" width="12" class="text-green-400"></iconify-icon>
+                        Brand Approved
+                    </div>
+                    <div class="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                        <div class="h-full bg-white w-full rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Asset 2 -->
+            <div
+                class="md:col-span-2 md:row-span-1 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-video md:aspect-auto shadow-sm">
+                <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/92cff667-f259-4342-a0aa-f51b804f4d5c_800w.webp"
+                    alt="Close-up eyes"
+                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                <div class="absolute top-4 left-4 z-10 flex gap-2">
+                    <span
+                        class="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">
+                        <iconify-icon icon="solar:gallery-bold" width="12" class="text-zinc-400"></iconify-icon> Feed
+                        1:1
+                    </span>
+                </div>
+                <div
+                    class="absolute bottom-4 left-4 right-4 z-10 opacity-0 transform translate-y-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0">
+                    <div
+                        class="flex items-center gap-2 text-[10px] text-white/90 mb-1 font-medium tracking-wide uppercase">
+                        <iconify-icon icon="solar:magic-stick-3-linear" width="12"
+                            class="text-amber-400"></iconify-icon> Auto-generated Copy
+                    </div>
+                    <p class="text-sm font-medium text-white truncate">See the world through a new lens.</p>
+                </div>
+            </div>
+
+            <!-- Asset 3 -->
+            <div
+                class="md:col-span-2 md:row-span-1 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-video md:aspect-auto shadow-sm">
+                <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d660f59f-a7f4-4bd9-88f1-54e60461dc80_800w.jpg"
+                    alt="Floating Green Credit Card"
+                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                <div class="absolute top-4 left-4 z-10 flex gap-2">
+                    <span
+                        class="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">
+                        <iconify-icon icon="solar:monitor-linear" width="12"></iconify-icon> Web Banner 16:9
+                    </span>
+                </div>
+                <div
+                    class="absolute bottom-4 left-4 right-4 z-10 opacity-0 transform translate-y-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0 flex justify-between items-end">
+                    <div>
+                        <div
+                            class="flex items-center gap-2 text-[10px] text-white/90 mb-1 font-medium tracking-wide uppercase">
+                            <iconify-icon icon="solar:layers-minimalistic-linear" width="12"
+                                class="text-blue-400"></iconify-icon> Locked Layers: 3
+                        </div>
+                        <p class="text-sm font-medium text-white">Premium Card Launch</p>
+                    </div>
+                    <button
+                        class="w-8 h-8 rounded-full bg-white text-zinc-900 flex items-center justify-center hover:bg-zinc-100 transition-colors">
+                        <iconify-icon icon="solar:download-linear" width="14"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Asset 4 -->
+            <div
+                class="md:col-span-1 md:row-span-2 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-[3/4] md:aspect-auto shadow-sm">
+                <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/fa51902b-c2a4-4c33-a96e-a8f1ef67edc6_800w.jpg"
+                    alt="Abstract neon light wave"
+                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                <div class="absolute top-4 left-4 z-10 flex gap-2">
+                    <span
+                        class="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">
+                        <iconify-icon icon="solar:play-stream-linear" width="12"></iconify-icon> Reel Cover
+                    </span>
+                </div>
+                <div
+                    class="absolute bottom-4 left-4 right-4 z-10 opacity-0 transform translate-y-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0">
+                    <div
+                        class="flex items-center gap-2 text-[10px] text-white/90 mb-1 font-medium tracking-wide uppercase">
+                        <iconify-icon icon="solar:code-scan-linear" width="12" class="text-purple-400"></iconify-icon>
+                        Dynamic Background
+                    </div>
+                    <p class="text-xs text-zinc-300">Generated using brand color palette.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-24 md:py-32 px-6 bg-zinc-50 border-t border-zinc-200 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center max-w-2xl mx-auto mb-20">
+                <h2 class="text-3xl md:text-5xl font-medium tracking-tighter text-zinc-900 mb-6">Everything you need to
+                    scale brand content.</h2>
+                <p class="text-base text-zinc-500 font-light leading-relaxed">Stop worrying about brand guidelines and
+                    compliance. Let our AI handle the details while you focus on the creative vision.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div
+                    class="p-8 rounded-2xl border border-zinc-200 bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                    <div
+                        class="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-200 shadow-sm flex items-center justify-center mb-6 text-zinc-700 group-hover:text-zinc-900 transition-colors">
+                        <iconify-icon icon="solar:shield-check-linear" width="20"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium tracking-tight text-zinc-900 mb-2">Compliance Guard</h3>
+                    <p class="text-sm text-zinc-500 leading-relaxed font-light">Real-time scanning prevents exaggerated
+                        claims and ensures all generated text meets legal and brand safety standards before export.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div
+                    class="p-8 rounded-2xl border border-zinc-200 bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                    <div
+                        class="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-200 shadow-sm flex items-center justify-center mb-6 text-amber-500 group-hover:text-amber-600 transition-colors">
+                        <iconify-icon icon="solar:magic-stick-3-linear" width="20"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium tracking-tight text-zinc-900 mb-2">AI Copy Editor</h3>
+                    <p class="text-sm text-zinc-500 leading-relaxed font-light">Generate context-aware headlines and
+                        subtext instantly. Use built-in tools to shorten, rephrase, or adapt tone perfectly to your
+                        audience.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div
+                    class="p-8 rounded-2xl border border-zinc-200 bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                    <div
+                        class="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-200 shadow-sm flex items-center justify-center mb-6 text-zinc-700 group-hover:text-zinc-900 transition-colors">
+                        <iconify-icon icon="solar:maximize-square-minimalistic-linear" width="20"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium tracking-tight text-zinc-900 mb-2">Auto-fit &amp; Constraints</h3>
+                    <p class="text-sm text-zinc-500 leading-relaxed font-light">Never break a layout again. Text
+                        automatically shrinks to fit bounds, while locked asset layers protect your core brand identity.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="py-24 border-t border-zinc-200 bg-zinc-900 relative z-10 text-center px-6 overflow-hidden">
+        <div class="absolute inset-0 opacity-10"
+            style="background-image: radial-gradient(white 1px, transparent 1px); background-size: 24px 24px;"></div>
+        <div class="max-w-3xl mx-auto relative z-10">
+            <h2 class="text-3xl md:text-5xl font-medium tracking-tighter text-white mb-6">Ready to streamline your
+                workflow?</h2>
+            <p class="text-base text-zinc-400 font-light mb-10">Join thousands of teams creating brand-perfect campaigns
+                in seconds.</p>
+            <button
+                class="trigger-setup inline-flex items-center gap-2 text-sm font-medium bg-white text-zinc-900 px-8 py-4 rounded-full hover:bg-zinc-100 transition-colors shadow-lg">
+                Start for free today
+                <iconify-icon icon="solar:arrow-right-linear" width="16"></iconify-icon>
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-zinc-200 bg-white relative z-10">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="font-medium tracking-tighter text-zinc-900 text-sm flex items-center gap-2">
+                <div class="w-5 h-5 bg-zinc-900 rounded flex items-center justify-center text-white text-[10px]">BF
+                </div>
+                BRANDFLOW
+            </div>
+            <div class="flex items-center gap-6 text-xs text-zinc-500 font-light">
+                <a href="#" class="hover:text-zinc-900 transition-colors">Privacy Policy</a>
+                <a href="#" class="hover:text-zinc-900 transition-colors">Terms of Service</a>
+                <a href="#" class="hover:text-zinc-900 transition-colors">Contact</a>
+            </div>
+            <div class="text-xs text-zinc-400 font-light">
+                © 2024 BrandFlow Inc. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Setup Interaction Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('setup-overlay');
+            const modal = document.getElementById('setup-modal');
+            const closeBtn = document.getElementById('close-setup');
+            const triggerBtns = document.querySelectorAll('.trigger-setup');
+
+            const stateInput = document.getElementById('state-input');
+            const stateAnalyzing = document.getElementById('state-analyzing');
+            const stateSuccess = document.getElementById('state-success');
+
+            const urlForm = document.getElementById('url-form');
+            const urlInput = document.getElementById('url-input');
+            const displayUrl = document.getElementById('display-url');
+            const mainNav = document.getElementById('main-nav');
+
+            const steps = [
+                document.getElementById('step-1'),
+                document.getElementById('step-2'),
+                document.getElementById('step-3'),
+                document.getElementById('step-4')
+            ];
+
+            function openModal() {
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.remove('translate-y-8');
+                mainNav.classList.add('-translate-y-full'); // Hide nav to focus
+                urlInput.focus();
+            }
+
+            function closeModal() {
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                modal.classList.add('translate-y-8');
+                mainNav.classList.remove('-translate-y-full');
+
+                // Reset state after transition
+                setTimeout(() => {
+                    stateInput.classList.remove('hidden');
+                    stateAnalyzing.classList.add('hidden');
+                    stateSuccess.classList.add('hidden');
+                    urlForm.reset();
+                    resetSteps();
+                }, 500);
+            }
+
+            function resetSteps() {
+                steps.forEach(step => {
+                    step.classList.add('opacity-50');
+                    const iconWrap = step.querySelector('.step-icon');
+                    iconWrap.className = 'w-6 h-6 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center step-icon flex-shrink-0 mt-0.5';
+                    iconWrap.innerHTML = '<iconify-icon icon="solar:spinner-linear" width="14" class="text-zinc-400 animate-spin"></iconify-icon>';
+
+                    const text = step.querySelector('.step-text');
+                    text.classList.remove('text-zinc-900');
+                    text.classList.add('text-zinc-500');
+
+                    const result = step.querySelector('.result-content');
+                    if (result) {
+                        result.classList.add('hidden');
+                        result.classList.remove('flex'); // For step 2
+                    }
+                });
+                document.getElementById('success-icon-wrapper').classList.remove('scale-100');
+                document.getElementById('success-icon-wrapper').classList.add('scale-0');
+            }
+
+            function completeStep(index) {
+                if (index >= steps.length) return;
+                const step = steps[index];
+
+                step.classList.remove('opacity-50');
+                const iconWrap = step.querySelector('.step-icon');
+                iconWrap.classList.remove('bg-zinc-50', 'border-zinc-200');
+                iconWrap.classList.add('bg-zinc-900', 'border-zinc-900');
+                iconWrap.innerHTML = '<iconify-icon icon="solar:check-circle-bold" width="14" class="text-white"></iconify-icon>';
+
+                const text = step.querySelector('.step-text');
+                text.classList.remove('text-zinc-500');
+                text.classList.add('text-zinc-900');
+
+                const result = step.querySelector('.result-content');
+                if (result) {
+                    if (index === 1) { // Color palette needs flex
+                        result.classList.remove('hidden');
+                        result.classList.add('flex');
+                    } else {
+                        result.classList.remove('hidden');
+                    }
+                }
+            }
+
+            triggerBtns.forEach(btn => btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal();
+            }));
+
+            closeBtn.addEventListener('click', closeModal);
+
+            // Close on background click
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+
+            urlForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const url = urlInput.value;
+
+                // Clean URL for display
+                try {
+                    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+                    displayUrl.textContent = urlObj.hostname;
+                } catch {
+                    displayUrl.textContent = url;
+                }
+
+                // Switch state
+                stateInput.classList.add('hidden');
+                stateAnalyzing.classList.remove('hidden');
+
+                // Simulate sequence
+                steps[0].classList.remove('opacity-50'); // Start first step visually
+
+                setTimeout(() => {
+                    completeStep(0);
+                    steps[1].classList.remove('opacity-50');
+                }, 1500);
+
+                setTimeout(() => {
+                    completeStep(1);
+                    steps[2].classList.remove('opacity-50');
+                }, 3000);
+
+                setTimeout(() => {
+                    completeStep(2);
+                    steps[3].classList.remove('opacity-50');
+                }, 4500);
+
+                setTimeout(() => {
+                    completeStep(3);
+                }, 6000);
+
+                // Show success and close
+                setTimeout(() => {
+                    stateAnalyzing.classList.add('hidden');
+                    stateSuccess.classList.remove('hidden');
+
+                    // Pop animation for success icon
+                    setTimeout(() => {
+                        document.getElementById('success-icon-wrapper').classList.remove('scale-0');
+                        document.getElementById('success-icon-wrapper').classList.add('scale-100');
+                    }, 50);
+
+                    // Close modal and scroll to editor
+                    setTimeout(() => {
+                        closeModal();
+                        document.getElementById('editor-mockup').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Add a quick pulse effect to the editor to draw attention
+                        const editor = document.getElementById('editor-mockup');
+                        editor.style.boxShadow = '0 0 0 4px rgba(24, 24, 27, 0.1)';
+                        setTimeout(() => editor.style.boxShadow = '', 1000);
+                    }, 2000);
+
+                }, 7000);
+            });
+        });
+    </script>
+
+</body>
+
+</html>
