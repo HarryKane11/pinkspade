@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
 
   const rows = entries.map((entry) => ({
     workspace_id: workspace.id,
+    name: entry.label || entry.productName || 'Untitled Design',
     brand_id: entry.brandId && validBrandIds.has(entry.brandId) ? entry.brandId : null,
     channel_preset_id: null, // skip FK — store in design_json instead
     thumbnail_url: entry.thumbnail,

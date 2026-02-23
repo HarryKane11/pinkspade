@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
     } catch (falErr) {
       // Generation failed — refund credits
       console.error("Fal AI error:", falErr);
-      await refundCredits(cost, modelId).catch(() => {});
+      await refundCredits(cost, modelId).catch((e) => console.error('Refund failed:', e));
       const message = falErr instanceof Error ? falErr.message : "Generation failed";
       return NextResponse.json({ error: message }, { status: 502 });
     }
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
 
     if (images.length === 0) {
       // Refund credits — no images produced
-      await refundCredits(cost, modelId).catch(() => {});
+      await refundCredits(cost, modelId).catch((e) => console.error('Refund failed:', e));
       return NextResponse.json(
         {
           error: "No images generated",

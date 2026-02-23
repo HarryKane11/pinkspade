@@ -55,13 +55,14 @@ export async function POST(request: NextRequest) {
         const quota = PLAN_CREDITS[plan] ?? 500;
 
         // Update profile plan
-        await supabase
+        const { error: profileErr } = await supabase
           .from('profiles')
           .update({ plan })
           .eq('id', userId);
+        if (profileErr) console.error('Webhook checkout: profiles update failed:', profileErr);
 
         // Update credit balance
-        await supabase
+        const { error: balanceErr } = await supabase
           .from('credit_balances')
           .upsert({
             user_id: userId,
@@ -70,15 +71,17 @@ export async function POST(request: NextRequest) {
             plan,
             reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           });
+        if (balanceErr) console.error('Webhook checkout: credit_balances upsert failed:', balanceErr);
 
         // Log purchase in ledger
-        await supabase.from('credit_ledger').insert({
+        const { error: ledgerErr } = await supabase.from('credit_ledger').insert({
           user_id: userId,
           amount: quota,
           type: 'purchase',
           description: `Plan upgrade to ${plan}`,
           metadata: { planId, checkoutId: (event.data as Record<string, unknown>)?.id },
         });
+        if (ledgerErr) console.error('Webhook checkout: credit_ledger insert failed:', ledgerErr);
 
         break;
       }
@@ -91,18 +94,20 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        await supabase
+        const { error: profileErr } = await supabase
           .from('profiles')
           .update({ plan: 'free' })
           .eq('id', userId);
+        if (profileErr) console.error('Webhook cancel: profiles update failed:', profileErr);
 
-        await supabase
+        const { error: balanceErr } = await supabase
           .from('credit_balances')
           .update({
             plan: 'free',
             monthly_quota: PLAN_CREDITS.free,
           })
           .eq('user_id', userId);
+        if (balanceErr) console.error('Webhook cancel: credit_balances update failed:', balanceErr);
 
         break;
       }
@@ -119,20 +124,22 @@ export async function POST(request: NextRequest) {
         const plan = planId?.startsWith('ultra') ? 'ultra' : 'pro';
         const quota = PLAN_CREDITS[plan] ?? 500;
 
-        await supabase
+        const { error: balanceErr } = await supabase
           .from('credit_balances')
           .update({
             balance: quota,
             reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .eq('user_id', userId);
+        if (balanceErr) console.error('Webhook renew: credit_balances update failed:', balanceErr);
 
-        await supabase.from('credit_ledger').insert({
+        const { error: ledgerErr } = await supabase.from('credit_ledger').insert({
           user_id: userId,
           amount: quota,
           type: 'monthly_reset',
           description: `Monthly credit reset (${plan})`,
         });
+        if (ledgerErr) console.error('Webhook renew: credit_ledger insert failed:', ledgerErr);
 
         break;
       }

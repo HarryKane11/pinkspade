@@ -92,7 +92,13 @@ export async function saveDesignsToHistory(entries: DesignHistoryEntry[]): Promi
     });
     // 401 = not logged in, localStorage is the only store
     if (res.status === 401) return;
-  } catch { /* localStorage fallback already written */ }
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      console.error('saveDesignsToHistory: Supabase save failed:', res.status, errBody);
+    }
+  } catch (err) {
+    console.error('saveDesignsToHistory: network error:', err);
+  }
 }
 
 export async function removeDesignFromHistory(id: string): Promise<void> {

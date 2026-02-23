@@ -133,13 +133,57 @@ function StudioContent() {
   const error = useStudio((s) => s.error);
   const viewport = useStudio((s) => s.viewport);
 
-  // Auto-save functionality
+  // Track whether the design has been persisted to Supabase
+  const supabaseDesignIdRef = useRef<string | null>(null);
+
+  // Auto-save functionality — persist canvas state to Supabase
   const { save } = useAutoSave({
-    onSave: async (id) => {
-      console.log('Saving design:', id);
+    onSave: async (_id, designJson) => {
+      const parsed = JSON.parse(designJson);
+      const designName = parsed?.meta?.name || 'Untitled Design';
+
+      if (!supabaseDesignIdRef.current) {
+        // First save: INSERT a new design row
+        const res = await fetch('/api/designs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            entries: [{
+              label: designName,
+              productName: '',
+              thumbnail: '',
+              format: `${parsed?.canvas?.width ?? 1080}x${parsed?.canvas?.height ?? 1080}`,
+              brandId: null,
+              brandName: null,
+              brandColors: [],
+              prompt: '',
+              moods: [],
+            }],
+          }),
+        });
+        if (res.ok) {
+          const { designs } = await res.json();
+          if (designs?.[0]?.id) {
+            supabaseDesignIdRef.current = designs[0].id;
+            // Immediately update with full design_json
+            await fetch(`/api/designs/${designs[0].id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ designJson: parsed, name: designName }),
+            });
+          }
+        }
+      } else {
+        // Subsequent saves: PATCH existing row
+        await fetch(`/api/designs/${supabaseDesignIdRef.current}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ designJson: parsed, name: designName }),
+        });
+      }
     },
     onError: (error) => {
-      console.error('Save error:', error);
+      console.error('Auto-save error:', error);
     },
   });
 
