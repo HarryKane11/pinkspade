@@ -550,7 +550,7 @@ function StudioContent() {
 
               {/* Asset preview overlay */}
               {previewAsset && (
-                <AssetPreviewOverlay asset={previewAsset} onClose={() => setPreviewAsset(null)} />
+                <AssetPreviewOverlay asset={previewAsset} onClose={() => setPreviewAsset(null)} formats={campaignFormats} />
               )}
             </div>
           )}
