@@ -121,6 +121,12 @@ export function Navbar({ onStartSetup }: NavbarProps) {
           {user ? (
             <div className="flex items-center gap-3">
               <Link
+                href="/campaign/new"
+                className="text-xs font-medium text-white bg-pink-500 px-3 py-1.5 rounded-full hover:bg-pink-600 transition-colors hidden sm:block"
+              >
+                새 캠페인
+              </Link>
+              <Link
                 href="/dashboard"
                 className="text-xs font-medium text-zinc-600 hover:text-zinc-900 transition-colors hidden sm:block"
               >

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Palette,
   Trash2,
@@ -12,6 +13,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { BrandDNAModal } from '@/components/brand/BrandDNAModal';
@@ -148,13 +150,22 @@ export default function WorkspacePage() {
             <h1 className="text-2xl font-medium tracking-tight text-zinc-900">Workspace</h1>
             <p className="text-sm text-zinc-500 mt-1">Manage your saved Brand DNAs and projects.</p>
           </div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white text-xs font-medium rounded-full hover:bg-zinc-800 transition-colors shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Brand
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/campaign/new"
+              className="flex items-center gap-2 px-5 py-2.5 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors shadow-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              새 캠페인
+            </Link>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white text-xs font-medium rounded-full hover:bg-zinc-800 transition-colors shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              New Brand
+            </button>
+          </div>
         </div>
 
         {/* Saved Brand DNAs */}
