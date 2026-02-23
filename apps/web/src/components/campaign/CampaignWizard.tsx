@@ -7,6 +7,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { CampaignStepper } from './CampaignStepper';
 import { Step1Setup } from './Step1Setup';
 import { Step2Creative } from './Step2Creative';
+import { Step3Generate } from './Step3Generate';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -151,7 +152,7 @@ export function CampaignWizard() {
   const stepContent = [
     <Step1Setup key="step1" data={data} update={update} onNext={next} />,
     <Step2Creative key="step2" data={data} update={update} onNext={next} onBack={back} />,
-    <div key="step3" className="text-center text-zinc-400 py-20">Step 3: 생성 & 편집 (placeholder)</div>,
+    <Step3Generate key="step3" data={data} update={update} onNext={next} onBack={back} />,
     <div key="step4" className="text-center text-zinc-400 py-20">Step 4: 검토 & 내보내기 (placeholder)</div>,
   ];
 
