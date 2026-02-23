@@ -170,10 +170,11 @@ export function Navbar({ onStartSetup }: NavbarProps) {
                         <span className="text-[10px] text-zinc-500">Plan</span>
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
                           creditPlan === 'enterprise' ? 'bg-purple-100 text-purple-700'
+                            : creditPlan === 'ultra' ? 'bg-amber-100 text-amber-700'
                             : creditPlan === 'pro' ? 'bg-blue-100 text-blue-700'
                             : 'bg-zinc-100 text-zinc-600'
                         }`}>
-                          {creditPlan === 'enterprise' ? 'Enterprise' : creditPlan === 'pro' ? 'Pro' : 'Free'}
+                          {creditPlan === 'enterprise' ? 'Enterprise' : creditPlan === 'ultra' ? 'Ultra' : creditPlan === 'pro' ? 'Pro' : 'Free'}
                         </span>
                       </div>
                     </div>

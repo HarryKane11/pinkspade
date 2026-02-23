@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         if (!userId || !planId) break;
 
         // Determine plan from planId
-        const plan = planId.startsWith('enterprise') ? 'enterprise' : 'pro';
+        const plan = planId.startsWith('ultra') ? 'ultra' : 'pro';
         const quota = PLAN_CREDITS[plan] ?? 500;
 
         // Update profile plan
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         const planId = event.data?.metadata?.planId as string;
         if (!userId) break;
 
-        const plan = planId?.startsWith('enterprise') ? 'enterprise' : 'pro';
+        const plan = planId?.startsWith('ultra') ? 'ultra' : 'pro';
         const quota = PLAN_CREDITS[plan] ?? 500;
 
         // Reset monthly credits

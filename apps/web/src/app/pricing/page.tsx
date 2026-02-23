@@ -6,7 +6,21 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Check } from 'lucide-react';
 
-const PLANS = [
+interface Plan {
+  id: string;
+  name: string;
+  monthlyPrice: number | null;
+  yearlyPrice: number | null;
+  credits: string;
+  features: string[];
+  cta: string;
+  popular: boolean;
+  dark: boolean;
+  checkoutId: { monthly: string; yearly: string } | null;
+  contactSales: boolean;
+}
+
+const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Free',
@@ -15,7 +29,7 @@ const PLANS = [
     credits: '500',
     features: [
       '500 credits / month',
-      'Basic AI models',
+      'Basic AI models (Flux Schnell)',
       '3 brand profiles',
       'PNG export',
       'All channel formats',
@@ -24,6 +38,7 @@ const PLANS = [
     popular: false,
     dark: false,
     checkoutId: null,
+    contactSales: false,
   },
   {
     id: 'pro',
@@ -37,31 +52,53 @@ const PLANS = [
       'Unlimited brand profiles',
       'PNG + PPTX export',
       'Priority generation',
-      'Copy AI (channel-tuned)',
+      'AI copywriting (channel-tuned)',
     ],
     cta: 'Start Pro',
     popular: true,
     dark: true,
     checkoutId: { monthly: 'pro_monthly', yearly: 'pro_yearly' },
+    contactSales: false,
+  },
+  {
+    id: 'ultra',
+    name: 'Ultra',
+    monthlyPrice: 99,
+    yearlyPrice: 79,
+    credits: '30,000',
+    features: [
+      '30,000 credits / month',
+      'All AI models + priority queue',
+      'Unlimited brand profiles',
+      'All export formats + API',
+      'Dedicated support',
+      '4K resolution (Gemini 3 Pro)',
+    ],
+    cta: 'Start Ultra',
+    popular: false,
+    dark: false,
+    checkoutId: { monthly: 'ultra_monthly', yearly: 'ultra_yearly' },
+    contactSales: false,
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    monthlyPrice: 99,
-    yearlyPrice: 79,
+    monthlyPrice: null,
+    yearlyPrice: null,
     credits: 'Unlimited',
     features: [
       'Unlimited credits',
-      'All AI models + priority',
-      'Unlimited brand profiles',
-      'All export formats + API',
-      'Dedicated support',
-      'Custom integrations',
+      'All AI models + SLA guarantee',
+      'SSO & team management',
+      'Custom integrations & API',
+      'Dedicated account manager',
+      'Custom model fine-tuning',
     ],
-    cta: 'Start Enterprise',
+    cta: 'Contact Sales',
     popular: false,
     dark: false,
-    checkoutId: { monthly: 'enterprise_monthly', yearly: 'enterprise_yearly' },
+    checkoutId: null,
+    contactSales: true,
   },
 ];
 
@@ -70,7 +107,14 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleCheckout = useCallback(async (plan: typeof PLANS[number]) => {
+  const handleCheckout = useCallback(async (plan: Plan) => {
+    // Enterprise → contact page
+    if (plan.contactSales) {
+      router.push('/contact');
+      return;
+    }
+
+    // Free → onboarding
     if (!plan.checkoutId) {
       router.push('/onboarding');
       return;
@@ -93,7 +137,6 @@ export default function PricingPage() {
         }
       }
 
-      // If not authenticated, redirect to login
       if (res.status === 401) {
         router.push('/login?redirect=/pricing');
         return;
@@ -147,20 +190,20 @@ export default function PricingPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl w-full">
           {PLANS.map((plan) => {
             const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
             return (
               <div
                 key={plan.id}
-                className={`p-8 rounded-2xl text-left relative ${
+                className={`p-7 rounded-2xl text-left relative ${
                   plan.dark
                     ? 'border-2 border-zinc-900 bg-zinc-900'
                     : 'border border-zinc-200 bg-white'
                 }`}
               >
                 {plan.popular && (
-                  <span className="absolute -top-3 left-8 px-3 py-0.5 bg-zinc-900 text-white text-[10px] font-medium uppercase tracking-wider rounded-full border border-zinc-700">
+                  <span className="absolute -top-3 left-7 px-3 py-0.5 bg-zinc-900 text-white text-[10px] font-medium uppercase tracking-wider rounded-full border border-zinc-700">
                     Popular
                   </span>
                 )}
@@ -168,19 +211,44 @@ export default function PricingPage() {
                 <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${plan.dark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   {plan.name}
                 </p>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className={`text-4xl font-semibold tracking-tight ${plan.dark ? 'text-white' : 'text-zinc-900'}`}>
-                    ${price}
-                  </span>
-                  {price > 0 && (
-                    <span className={`text-xs ${plan.dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                      / month
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  {price !== null ? (
+                    <>
+                      {isYearly && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && (
+                        <span className={`text-lg line-through ${plan.dark ? 'text-zinc-600' : 'text-zinc-300'}`}>
+                          ${plan.monthlyPrice}
+                        </span>
+                      )}
+                      <span className={`text-3xl font-semibold tracking-tight ${plan.dark ? 'text-white' : 'text-zinc-900'}`}>
+                        ${price}
+                      </span>
+                      {price > 0 && (
+                        <span className={`text-xs ${plan.dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                          / month
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className={`text-2xl font-semibold tracking-tight ${plan.dark ? 'text-white' : 'text-zinc-900'}`}>
+                      Custom
                     </span>
                   )}
                 </div>
-                <p className={`text-xs mb-8 ${plan.dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                  {price === 0 ? 'forever' : isYearly ? `$${price * 12}/year billed annually` : 'billed monthly'}
+                <p className={`text-xs ${plan.dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                  {price === null
+                    ? 'tailored to your needs'
+                    : price === 0
+                      ? 'forever'
+                      : isYearly
+                        ? `$${price * 12}/year billed annually`
+                        : 'billed monthly'}
                 </p>
+                {isYearly && plan.monthlyPrice !== null && plan.yearlyPrice !== null && plan.monthlyPrice > 0 && (
+                  <p className="text-[10px] font-medium text-green-600 mt-1 mb-4">
+                    Save ${(plan.monthlyPrice - plan.yearlyPrice) * 12}/year
+                  </p>
+                )}
+                {(!isYearly || price === 0 || price === null) && <div className="mb-6" />}
 
                 <div className={`text-xs font-medium mb-4 px-2.5 py-1.5 rounded-md inline-block ${
                   plan.dark ? 'bg-white/10 text-white' : 'bg-zinc-100 text-zinc-700'
@@ -188,10 +256,10 @@ export default function PricingPage() {
                   {plan.credits} credits/month
                 </div>
 
-                <ul className={`flex flex-col gap-3 text-sm font-light mb-8 ${plan.dark ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                <ul className={`flex flex-col gap-2.5 text-[13px] font-light mb-7 ${plan.dark ? 'text-zinc-300' : 'text-zinc-600'}`}>
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2">
-                      <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.dark ? 'text-green-400' : 'text-green-500'}`} />
+                      <Check className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${plan.dark ? 'text-green-400' : 'text-green-500'}`} />
                       {feature}
                     </li>
                   ))}
@@ -200,10 +268,12 @@ export default function PricingPage() {
                 <button
                   onClick={() => handleCheckout(plan)}
                   disabled={loadingPlan === plan.id}
-                  className={`w-full text-sm font-medium px-6 py-3 rounded-full transition-colors disabled:opacity-50 ${
+                  className={`w-full text-sm font-medium px-5 py-2.5 rounded-full transition-colors disabled:opacity-50 ${
                     plan.dark
                       ? 'bg-white text-zinc-900 hover:bg-zinc-100'
-                      : 'border border-zinc-200 text-zinc-900 hover:bg-zinc-50'
+                      : plan.contactSales
+                        ? 'border border-zinc-300 text-zinc-600 hover:bg-zinc-50'
+                        : 'border border-zinc-200 text-zinc-900 hover:bg-zinc-50'
                   }`}
                 >
                   {loadingPlan === plan.id ? 'Loading...' : plan.cta}

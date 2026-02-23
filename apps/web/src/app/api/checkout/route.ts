@@ -3,7 +3,7 @@ import { polar, POLAR_PRODUCTS } from '@/lib/polar';
 import { createClient } from '@/lib/supabase/server';
 
 interface CheckoutRequest {
-  planId: 'pro_monthly' | 'pro_yearly' | 'enterprise_monthly' | 'enterprise_yearly';
+  planId: 'pro_monthly' | 'pro_yearly' | 'ultra_monthly' | 'ultra_yearly';
 }
 
 export async function POST(request: NextRequest) {
