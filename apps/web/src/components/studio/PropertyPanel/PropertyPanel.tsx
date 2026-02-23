@@ -3,8 +3,14 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useStudio, useStudioActions } from '@/contexts/studio-context';
 import type { TextLayer, BackgroundLayer } from '@/lib/shared';
-import { Palette, Type, Wand2, ShieldCheck, Search, ChevronDown, Loader2 } from 'lucide-react';
+import { Palette, Type, Wand2, ShieldCheck, Search, ChevronDown, Loader2, Check, RotateCcw, X } from 'lucide-react';
 import { useGoogleFonts, loadGoogleFont } from '@/hooks/useGoogleFonts';
+
+interface GeneratedCopy {
+  layerId: string;
+  layerName: string;
+  content: string;
+}
 
 export function PropertyPanel() {
   const design = useStudio((s) => s.design);
@@ -15,6 +21,7 @@ export function PropertyPanel() {
   const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
   const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
   const [copyPrompt, setCopyPrompt] = useState('');
+  const [generatedCopies, setGeneratedCopies] = useState<GeneratedCopy[] | null>(null);
 
   // All hooks must be above the early return
   const filteredFonts = useMemo(() => {
@@ -88,9 +95,16 @@ export function PropertyPanel() {
       if (res.ok) {
         const data = await res.json();
         if (data.copies) {
+          const copies: GeneratedCopy[] = [];
           for (const [layerId, newContent] of Object.entries(data.copies)) {
-            updateLayer(layerId, { content: newContent as string });
+            const layer = allTextLayers.find((l) => l.id === layerId);
+            copies.push({
+              layerId,
+              layerName: layer?.name || layerId,
+              content: newContent as string,
+            });
           }
+          setGeneratedCopies(copies);
         }
       }
     } catch (err) {
@@ -98,7 +112,21 @@ export function PropertyPanel() {
     } finally {
       setIsGeneratingCopy(false);
     }
-  }, [design, updateLayer, copyPrompt]);
+  }, [design, copyPrompt]);
+
+  const handleApplyCopy = useCallback(() => {
+    if (!generatedCopies) return;
+    for (const copy of generatedCopies) {
+      updateLayer(copy.layerId, { content: copy.content });
+    }
+    setGeneratedCopies(null);
+  }, [generatedCopies, updateLayer]);
+
+  const handleUpdateGeneratedCopy = useCallback((layerId: string, content: string) => {
+    setGeneratedCopies((prev) =>
+      prev ? prev.map((c) => c.layerId === layerId ? { ...c, content } : c) : null
+    );
+  }, []);
 
   if (!design) return null;
 
@@ -224,6 +252,60 @@ export function PropertyPanel() {
               </>
             )}
           </button>
+
+          {/* Generated Copy Preview */}
+          {generatedCopies && generatedCopies.length > 0 && (
+            <div className="border border-amber-200 bg-amber-50/50 rounded-lg p-3 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-medium text-amber-700 uppercase tracking-wider">생성된 카피</span>
+                <button
+                  onClick={() => setGeneratedCopies(null)}
+                  className="text-zinc-400 hover:text-zinc-600 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+
+              {generatedCopies.map((copy) => (
+                <div key={copy.layerId} className="flex flex-col gap-1">
+                  <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                    {copy.layerName}
+                  </label>
+                  {copy.layerName.toLowerCase().includes('description') || copy.layerName.toLowerCase().includes('본문') ? (
+                    <textarea
+                      value={copy.content}
+                      onChange={(e) => handleUpdateGeneratedCopy(copy.layerId, e.target.value)}
+                      className="w-full h-16 bg-white border border-amber-200 text-zinc-900 text-xs rounded-md p-2 outline-none resize-none focus:ring-2 focus:ring-amber-300/50 focus:border-amber-300 transition-all"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={copy.content}
+                      onChange={(e) => handleUpdateGeneratedCopy(copy.layerId, e.target.value)}
+                      className="w-full bg-white border border-amber-200 text-zinc-900 text-xs rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-amber-300/50 focus:border-amber-300 transition-all"
+                    />
+                  )}
+                </div>
+              ))}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleApplyCopy}
+                  className="flex-1 bg-zinc-900 text-white rounded-md py-1.5 text-xs font-medium hover:bg-zinc-800 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-3 h-3" />
+                  적용
+                </button>
+                <button
+                  onClick={handleGenerateCopy}
+                  disabled={isGeneratingCopy}
+                  className="px-3 bg-white border border-zinc-200 rounded-md py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="w-full h-px bg-zinc-100" />
