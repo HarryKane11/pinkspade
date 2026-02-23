@@ -18,7 +18,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { BrandDNAModal } from '@/components/brand/BrandDNAModal';
 import { getAllBrands, removeBrand, type StoredBrandDna } from '@/lib/brand-storage';
 import {
-  getDesignsGroupedByBrand,
+  getDesignsGroupedByBrandAndChannel,
   removeDesignFromHistory,
   type DesignHistoryEntry,
 } from '@/lib/design-history';
@@ -36,29 +36,39 @@ export default function WorkspacePage() {
   const router = useRouter();
   const [brands, setBrands] = useState<StoredBrandDna[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [designGroups, setDesignGroups] = useState<Record<string, DesignHistoryEntry[]>>({});
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [designGroups, setDesignGroups] = useState<Record<string, Record<string, DesignHistoryEntry[]>>>({});
+  const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set());
+  const [expandedChannels, setExpandedChannels] = useState<Set<string>>(new Set());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const refreshData = useCallback(() => {
     setBrands(getAllBrands());
-    setDesignGroups(getDesignsGroupedByBrand());
+    setDesignGroups(getDesignsGroupedByBrandAndChannel());
   }, []);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  // Auto-expand all groups on first load
+  // Auto-expand all brand groups on first load
   useEffect(() => {
     const keys = Object.keys(designGroups);
-    if (keys.length > 0 && expandedGroups.size === 0) {
-      setExpandedGroups(new Set(keys));
+    if (keys.length > 0 && expandedBrands.size === 0) {
+      setExpandedBrands(new Set(keys));
     }
-  }, [designGroups, expandedGroups.size]);
+  }, [designGroups, expandedBrands.size]);
 
-  const toggleGroup = useCallback((key: string) => {
-    setExpandedGroups((prev) => {
+  const toggleBrand = useCallback((key: string) => {
+    setExpandedBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const toggleChannel = useCallback((key: string) => {
+    setExpandedChannels((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -107,10 +117,23 @@ export default function WorkspacePage() {
     setTimeout(refreshData, 600);
   }, [refreshData]);
 
-  const totalDesigns = Object.values(designGroups).reduce((sum, g) => sum + g.length, 0);
+  const totalDesigns = Object.values(designGroups).reduce(
+    (sum, channels) => sum + Object.values(channels).reduce((s, entries) => s + entries.length, 0),
+    0
+  );
 
   // Build a brandId → brand lookup
   const brandMap = new Map(brands.map((b) => [b.id, b]));
+
+  const CHANNEL_LABELS: Record<string, string> = {
+    instagram: 'Instagram',
+    youtube: 'YouTube',
+    naver: 'Naver',
+    kakao: 'Kakao',
+    coupang: 'Coupang',
+    facebook: 'Facebook',
+    uncategorized: 'Other',
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -264,125 +287,119 @@ export default function WorkspacePage() {
               </div>
               <p className="text-sm font-medium text-zinc-900 mb-1">No designs yet</p>
               <p className="text-xs text-zinc-400">
-                Generated assets will automatically appear here, grouped by brand.
+                Generated assets will automatically appear here, grouped by brand and channel.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {Object.entries(designGroups).map(([groupKey, entries]) => {
-                const brand = groupKey !== 'no-brand' ? brandMap.get(groupKey) : null;
-                const groupName = brand?.brandName ?? 'Unbranded Designs';
-                const groupColors = brand
+              {Object.entries(designGroups).map(([brandKey, channels]) => {
+                const brand = brandKey !== 'no-brand' ? brandMap.get(brandKey) : null;
+                const brandName = brand?.brandName ?? 'Unbranded Designs';
+                const brandColors = brand
                   ? [brand.colors.primary, brand.colors.secondary, brand.colors.accent].filter(Boolean)
-                  : entries[0]?.brandColors?.slice(0, 3) ?? [];
-                const isExpanded = expandedGroups.has(groupKey);
-
-                // Group entries by date
-                const byDate = new Map<string, DesignHistoryEntry[]>();
-                for (const entry of entries) {
-                  const { date } = formatDateTime(entry.createdAt);
-                  if (!byDate.has(date)) byDate.set(date, []);
-                  byDate.get(date)!.push(entry);
-                }
+                  : [];
+                const isBrandExpanded = expandedBrands.has(brandKey);
+                const totalInBrand = Object.values(channels).reduce((s, e) => s + e.length, 0);
 
                 return (
-                  <div key={groupKey} className="border border-zinc-200 rounded-xl overflow-hidden">
-                    {/* Folder header */}
+                  <div key={brandKey} className="border border-zinc-200 rounded-xl overflow-hidden">
+                    {/* Brand folder header */}
                     <button
-                      onClick={() => toggleGroup(groupKey)}
+                      onClick={() => toggleBrand(brandKey)}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors text-left"
                     >
-                      {/* Color dots */}
                       <div className="flex items-center gap-0.5 flex-shrink-0">
-                        {groupColors.length > 0 ? (
-                          groupColors.map((hex, i) => (
-                            <div
-                              key={i}
-                              className="w-3 h-3 rounded-full border border-black/10"
-                              style={{ backgroundColor: hex }}
-                            />
+                        {brandColors.length > 0 ? (
+                          brandColors.map((hex, i) => (
+                            <div key={i} className="w-3 h-3 rounded-full border border-black/10" style={{ backgroundColor: hex }} />
                           ))
                         ) : (
                           <FolderOpen className="w-4 h-4 text-zinc-400" />
                         )}
                       </div>
-
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-zinc-900">{groupName}</span>
+                        <span className="text-sm font-medium text-zinc-900">{brandName}</span>
                         <span className="ml-2 text-[11px] text-zinc-400">
-                          {entries.length} asset{entries.length !== 1 ? 's' : ''}
+                          {totalInBrand} asset{totalInBrand !== 1 ? 's' : ''}
                         </span>
                       </div>
-
-                      {isExpanded ? (
+                      {isBrandExpanded ? (
                         <ChevronDown className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                       ) : (
                         <ChevronRight className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                       )}
                     </button>
 
-                    {/* Expanded content */}
-                    {isExpanded && (
-                      <div className="border-t border-zinc-100 px-4 pb-4">
-                        {[...byDate.entries()].map(([date, dateEntries]) => (
-                          <div key={date} className="mt-3">
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <Clock className="w-3 h-3 text-zinc-400" />
-                              <span className="text-[11px] font-medium text-zinc-500">{date}</span>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                              {dateEntries.map((entry) => {
-                                const { time } = formatDateTime(entry.createdAt);
-                                return (
-                                  <div
-                                    key={entry.id}
-                                    className="group/card relative rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-400 hover:shadow-md transition-all cursor-pointer"
-                                    onClick={() => setPreviewImage(entry.thumbnail)}
-                                  >
-                                    {/* Thumbnail */}
-                                    <div className="aspect-square bg-zinc-50 relative overflow-hidden">
-                                      <img
-                                        src={entry.thumbnail}
-                                        alt={entry.label}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      {/* Delete button */}
-                                      <button
-                                        onClick={(e) => handleRemoveDesign(e, entry.id)}
-                                        className="absolute top-1 right-1 p-1 rounded bg-black/40 text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/60 transition-all"
-                                        title="Remove from history"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                    {/* Info */}
-                                    <div className="px-2 py-1.5">
-                                      <p className="text-[10px] font-medium text-zinc-700 truncate">
-                                        {entry.label}
-                                      </p>
-                                      <div className="flex items-center justify-between mt-0.5">
-                                        <span className="text-[9px] text-zinc-400">{entry.format}</span>
-                                        <span className="text-[9px] text-zinc-400">{time}</span>
-                                      </div>
-                                      {entry.moods.length > 0 && (
-                                        <div className="flex gap-0.5 mt-1 flex-wrap">
-                                          {entry.moods.slice(0, 2).map((mood) => (
-                                            <span
-                                              key={mood}
-                                              className="text-[8px] bg-zinc-100 text-zinc-500 px-1 py-0.5 rounded"
+                    {/* Channel sub-folders */}
+                    {isBrandExpanded && (
+                      <div className="border-t border-zinc-100">
+                        {Object.entries(channels).map(([channelKey, entries]) => {
+                          const channelLabel = CHANNEL_LABELS[channelKey] || channelKey;
+                          const channelExpandKey = `${brandKey}:${channelKey}`;
+                          const isChannelExpanded = expandedChannels.has(channelExpandKey);
+
+                          return (
+                            <div key={channelKey}>
+                              {/* Channel header */}
+                              <button
+                                onClick={() => toggleChannel(channelExpandKey)}
+                                className="w-full flex items-center gap-2.5 pl-10 pr-4 py-2 hover:bg-zinc-50 transition-colors text-left border-b border-zinc-50"
+                              >
+                                <FolderOpen className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+                                <span className="text-xs font-medium text-zinc-700 flex-1">{channelLabel}</span>
+                                <span className="text-[10px] text-zinc-400">{entries.length}</span>
+                                {isChannelExpanded ? (
+                                  <ChevronDown className="w-3.5 h-3.5 text-zinc-300" />
+                                ) : (
+                                  <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />
+                                )}
+                              </button>
+
+                              {/* Design entries */}
+                              {isChannelExpanded && (
+                                <div className="pl-10 pr-4 pb-3 pt-2">
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                    {entries.map((entry) => {
+                                      const { time } = formatDateTime(entry.createdAt);
+                                      return (
+                                        <div
+                                          key={entry.id}
+                                          className="group/card relative rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-400 hover:shadow-md transition-all cursor-pointer"
+                                          onClick={() => setPreviewImage(entry.thumbnail)}
+                                        >
+                                          <div className="aspect-square bg-zinc-50 relative overflow-hidden">
+                                            <img src={entry.thumbnail} alt={entry.label} className="w-full h-full object-cover" />
+                                            <button
+                                              onClick={(e) => handleRemoveDesign(e, entry.id)}
+                                              className="absolute top-1 right-1 p-1 rounded bg-black/40 text-white opacity-0 group-hover/card:opacity-100 hover:bg-black/60 transition-all"
+                                              title="Remove from history"
                                             >
-                                              {mood}
-                                            </span>
-                                          ))}
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                          <div className="px-2 py-1.5">
+                                            <p className="text-[10px] font-medium text-zinc-700 truncate">{entry.label}</p>
+                                            <div className="flex items-center justify-between mt-0.5">
+                                              <span className="text-[9px] text-zinc-400">{entry.format}</span>
+                                              <span className="text-[9px] text-zinc-400">{time}</span>
+                                            </div>
+                                            {entry.moods.length > 0 && (
+                                              <div className="flex gap-0.5 mt-1 flex-wrap">
+                                                {entry.moods.slice(0, 2).map((mood) => (
+                                                  <span key={mood} className="text-[8px] bg-zinc-100 text-zinc-500 px-1 py-0.5 rounded">{mood}</span>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
-                                      )}
-                                    </div>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useStudio, useStudioActions } from '@/contexts/studio-context';
 import type { TextLayer, BackgroundLayer } from '@/lib/shared';
-import { Palette, Type, Wand2, ShieldCheck, Search, ChevronDown, Loader2, Check, RotateCcw, X } from 'lucide-react';
+import { Palette, Type, Wand2, ShieldCheck, Search, ChevronDown, Loader2, Check, RotateCcw, X, AlertCircle } from 'lucide-react';
 import { useGoogleFonts, loadGoogleFont } from '@/hooks/useGoogleFonts';
 
 interface GeneratedCopy {
@@ -22,6 +22,7 @@ export function PropertyPanel() {
   const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
   const [copyPrompt, setCopyPrompt] = useState('');
   const [generatedCopies, setGeneratedCopies] = useState<GeneratedCopy[] | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   // All hooks must be above the early return
   const filteredFonts = useMemo(() => {
@@ -52,9 +53,14 @@ export function PropertyPanel() {
   const handleGenerateCopy = useCallback(async () => {
     if (!design) return;
     const allTextLayers = design.layers.filter((l) => l.type === 'text') as TextLayer[];
-    if (allTextLayers.length === 0) return;
+    if (allTextLayers.length === 0) {
+      setCopyError('캔버스에 텍스트 레이어가 없습니다. 레이어를 추가해주세요.');
+      return;
+    }
 
     setIsGeneratingCopy(true);
+    setCopyError(null);
+    setGeneratedCopies(null);
 
     // Gather context from sessionStorage
     let brandDna = null;
@@ -92,23 +98,35 @@ export function PropertyPanel() {
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.copies) {
-          const copies: GeneratedCopy[] = [];
-          for (const [layerId, newContent] of Object.entries(data.copies)) {
-            const layer = allTextLayers.find((l) => l.id === layerId);
-            copies.push({
-              layerId,
-              layerName: layer?.name || layerId,
-              content: newContent as string,
-            });
-          }
-          setGeneratedCopies(copies);
+      if (res.status === 402) {
+        setCopyError('크레딧이 부족합니다. 플랜을 업그레이드해주세요.');
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setCopyError(data.error || '카피 생성에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      const data = await res.json();
+      if (data.copies && Object.keys(data.copies).length > 0) {
+        const copies: GeneratedCopy[] = [];
+        for (const [layerId, newContent] of Object.entries(data.copies)) {
+          const layer = allTextLayers.find((l) => l.id === layerId);
+          copies.push({
+            layerId,
+            layerName: layer?.name || layerId,
+            content: newContent as string,
+          });
         }
+        setGeneratedCopies(copies);
+      } else {
+        setCopyError('카피를 생성하지 못했습니다. 프롬프트를 수정해보세요.');
       }
     } catch (err) {
       console.error('Copy generation failed:', err);
+      setCopyError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setIsGeneratingCopy(false);
     }
@@ -252,6 +270,22 @@ export function PropertyPanel() {
               </>
             )}
           </button>
+
+          {/* Copy Error */}
+          {copyError && (
+            <div className="border border-red-200 bg-red-50 rounded-lg p-2.5 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs text-red-700">{copyError}</p>
+                {copyError.includes('크레딧') && (
+                  <a href="/pricing" className="text-[10px] text-red-600 underline mt-1 inline-block">Upgrade</a>
+                )}
+              </div>
+              <button onClick={() => setCopyError(null)} className="text-red-300 hover:text-red-500">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
 
           {/* Generated Copy Preview */}
           {generatedCopies && generatedCopies.length > 0 && (

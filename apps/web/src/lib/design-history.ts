@@ -9,6 +9,8 @@ export interface DesignHistoryEntry {
   brandName: string | null;
   /** Snapshot of brand colors at time of generation */
   brandColors: string[];
+  /** Channel category (e.g. 'instagram', 'youtube', 'naver') */
+  channelCategory?: string;
   prompt: string;
   moods: string[];
   productName: string;
@@ -76,6 +78,20 @@ export function getDesignsGroupedByBrand(): Record<string, DesignHistoryEntry[]>
     const key = entry.brandId ?? 'no-brand';
     if (!groups[key]) groups[key] = [];
     groups[key].push(entry);
+  }
+  return groups;
+}
+
+/** Group designs by brandId → channelCategory → entries */
+export function getDesignsGroupedByBrandAndChannel(): Record<string, Record<string, DesignHistoryEntry[]>> {
+  const history = readHistory();
+  const groups: Record<string, Record<string, DesignHistoryEntry[]>> = {};
+  for (const entry of history) {
+    const brandKey = entry.brandId ?? 'no-brand';
+    const channelKey = entry.channelCategory || 'uncategorized';
+    if (!groups[brandKey]) groups[brandKey] = {};
+    if (!groups[brandKey][channelKey]) groups[brandKey][channelKey] = [];
+    groups[brandKey][channelKey].push(entry);
   }
   return groups;
 }

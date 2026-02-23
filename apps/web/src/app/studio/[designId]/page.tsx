@@ -252,6 +252,8 @@ function StudioContent() {
         productName = sessionStorage.getItem('assetProductName') ?? '';
       } catch { /* ignore */ }
 
+      const channelCategory = sessionStorage.getItem('activeChannelCategory') ?? '';
+
       const entries: DesignHistoryEntry[] = assets.map((asset) => ({
         id: asset.id,
         thumbnail: asset.image,
@@ -260,6 +262,7 @@ function StudioContent() {
         brandId,
         brandName,
         brandColors,
+        channelCategory: channelCategory || undefined,
         prompt,
         moods,
         productName,
