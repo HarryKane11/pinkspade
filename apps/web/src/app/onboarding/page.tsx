@@ -92,37 +92,54 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Use upsert to handle both existing and missing profile rows
-      const { error } = await supabase.from('profiles').upsert({
-        id: user.id,
-        display_name: data.displayName,
-        email: user.email ?? '',
-        avatar_url: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? '',
-        onboarding_completed: true,
-        onboarding_data: {
-          role: data.role,
-          company_size: data.companySize,
-          industries: data.industries,
-          brand_url: data.brandUrl,
-          channels: data.channels,
-          goals: data.goals,
-        },
-      }, { onConflict: 'id' })
+      const onboardingPayload = {
+        role: data.role,
+        company_size: data.companySize,
+        industries: data.industries,
+        brand_url: data.brandUrl,
+        channels: data.channels,
+        goals: data.goals,
+      }
 
-      if (error) {
-        console.error('Onboarding save error:', error)
-        // Fallback: try update without onboarding_data in case column doesn't exist
-        const { error: fallbackError } = await supabase.from('profiles').upsert({
+      // Step 1: Try updating existing profile
+      const { data: updated, error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          display_name: data.displayName,
+          onboarding_completed: true,
+          onboarding_data: onboardingPayload,
+        })
+        .eq('id', user.id)
+        .select('id')
+
+      if (updateError) {
+        console.error('Onboarding update error:', updateError)
+        // Column might not exist — try minimal update
+        await supabase
+          .from('profiles')
+          .update({ onboarding_completed: true })
+          .eq('id', user.id)
+      }
+
+      // Step 2: If update affected 0 rows, profile doesn't exist — insert it
+      if (!updateError && (!updated || updated.length === 0)) {
+        const { error: insertError } = await supabase.from('profiles').insert({
           id: user.id,
           display_name: data.displayName,
           email: user.email ?? '',
+          avatar_url: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? '',
           onboarding_completed: true,
-        }, { onConflict: 'id' })
+          onboarding_data: onboardingPayload,
+        })
 
-        if (fallbackError) {
-          console.error('Onboarding fallback error:', fallbackError)
-          setSaving(false)
-          return
+        if (insertError) {
+          console.error('Onboarding insert error:', insertError)
+          // Minimal insert as last resort
+          await supabase.from('profiles').insert({
+            id: user.id,
+            email: user.email ?? '',
+            onboarding_completed: true,
+          })
         }
       }
 
