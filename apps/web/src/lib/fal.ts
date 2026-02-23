@@ -9,6 +9,9 @@ fal.config({
 
 export type MediaType = "image" | "video";
 
+export type CreditTier = "basic" | "pro" | "ultra";
+export type SizeMode = "image_size" | "aspect_ratio";
+
 export interface FalModel {
   id: string;
   falId: string; // fal.ai model endpoint ID
@@ -18,9 +21,13 @@ export interface FalModel {
   description: string;
   speed: "fast" | "standard" | "slow";
   quality: "standard" | "high" | "ultra";
-  supportedSizes: string[]; // e.g. ["square_hd", "landscape_4_3", "portrait_4_3"]
+  sizeMode: SizeMode; // how the model accepts size params
+  supportedSizes: string[]; // image_size mode presets
+  supportedAspectRatios?: string[]; // aspect_ratio mode enum values
   defaultSize: string;
   maxImages?: number;
+  supportsImageInput?: boolean; // can accept product/layout image
+  creditTier: CreditTier; // billing tier
 }
 
 export const FAL_MODELS: FalModel[] = [
@@ -34,9 +41,11 @@ export const FAL_MODELS: FalModel[] = [
     description: "1-4 step generation, fastest option for drafts and iterations",
     speed: "fast",
     quality: "standard",
+    sizeMode: "image_size",
     supportedSizes: ["square_hd", "square", "landscape_4_3", "landscape_16_9", "portrait_4_3", "portrait_16_9"],
     defaultSize: "square_hd",
     maxImages: 4,
+    creditTier: "basic",
   },
   // ─── Standard / Balanced ───
   {
@@ -48,9 +57,11 @@ export const FAL_MODELS: FalModel[] = [
     description: "High-quality generation with good speed, best all-rounder",
     speed: "standard",
     quality: "high",
+    sizeMode: "image_size",
     supportedSizes: ["square_hd", "square", "landscape_4_3", "landscape_16_9", "portrait_4_3", "portrait_16_9"],
     defaultSize: "square_hd",
     maxImages: 4,
+    creditTier: "pro",
   },
   // ─── Pro / Ultra Quality ───
   {
@@ -62,10 +73,13 @@ export const FAL_MODELS: FalModel[] = [
     description: "Up to 2K resolution, maximum photo realism",
     speed: "slow",
     quality: "ultra",
-    supportedSizes: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16", "9:21"],
+    sizeMode: "aspect_ratio",
+    supportedSizes: [],
+    supportedAspectRatios: ["21:9", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16", "9:21"],
     defaultSize: "1:1",
+    creditTier: "ultra",
   },
-  // ─── Design / Vector ───
+  // ─── Design / Raster ───
   {
     id: "recraft-v4",
     falId: "fal-ai/recraft/v4/text-to-image",
@@ -75,9 +89,26 @@ export const FAL_MODELS: FalModel[] = [
     description: "Design-focused generation, great for marketing materials and illustrations",
     speed: "standard",
     quality: "high",
+    sizeMode: "image_size",
     supportedSizes: ["square_hd", "square", "landscape_4_3", "landscape_16_9", "portrait_4_3", "portrait_16_9"],
     defaultSize: "square_hd",
+    creditTier: "pro",
   },
+  {
+    id: "recraft-v4-pro",
+    falId: "fal-ai/recraft/v4/pro/text-to-image",
+    name: "Recraft V4 Pro",
+    nameKo: "Recraft 프로",
+    type: "image",
+    description: "Pro-tier Recraft with enhanced detail and commercial quality",
+    speed: "standard",
+    quality: "high",
+    sizeMode: "image_size",
+    supportedSizes: ["square_hd", "square", "landscape_4_3", "landscape_16_9", "portrait_4_3", "portrait_16_9"],
+    defaultSize: "square_hd",
+    creditTier: "pro",
+  },
+  // ─── Design / Vector ───
   {
     id: "recraft-v4-vector",
     falId: "fal-ai/recraft/v4/text-to-vector",
@@ -87,8 +118,10 @@ export const FAL_MODELS: FalModel[] = [
     description: "SVG vector generation for logos and icons",
     speed: "standard",
     quality: "high",
+    sizeMode: "image_size",
     supportedSizes: ["square_hd", "square", "landscape_4_3", "landscape_16_9", "portrait_4_3", "portrait_16_9"],
     defaultSize: "square_hd",
+    creditTier: "pro",
   },
   // ─── Kontext (with image input) ───
   {
@@ -100,8 +133,27 @@ export const FAL_MODELS: FalModel[] = [
     description: "Edit and restyle existing images while preserving context",
     speed: "standard",
     quality: "high",
+    sizeMode: "image_size",
     supportedSizes: ["square_hd", "square", "landscape_4_3", "landscape_16_9", "portrait_4_3", "portrait_16_9"],
     defaultSize: "square_hd",
+    supportsImageInput: true,
+    creditTier: "pro",
+  },
+  // ─── Gemini via Fal ───
+  {
+    id: "nano-banana-pro",
+    falId: "fal-ai/nano-banana-pro",
+    name: "Gemini 3 Pro",
+    nameKo: "Gemini 3 Pro",
+    type: "image",
+    description: "Google Gemini via Fal - flexible aspect ratios, 2K/4K resolution",
+    speed: "standard",
+    quality: "ultra",
+    sizeMode: "aspect_ratio",
+    supportedSizes: [],
+    supportedAspectRatios: ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+    defaultSize: "1:1",
+    creditTier: "ultra",
   },
 ];
 
