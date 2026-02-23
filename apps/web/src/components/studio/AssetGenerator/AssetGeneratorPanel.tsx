@@ -80,6 +80,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
   const [customWidth, setCustomWidth] = useState('1080');
   const [customHeight, setCustomHeight] = useState('1080');
   const [resolution, setResolution] = useState('2K');
+  const [creditError, setCreditError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync state to sessionStorage
@@ -237,6 +238,7 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
   const handleGenerate = useCallback(async () => {
     onGenerate?.();
 
+    setCreditError(null);
     const selectedFormats = formats.filter((f) => f.checked);
     if (selectedFormats.length === 0) return;
 
@@ -300,6 +302,10 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
           }
         } else {
           const err = await res.json().catch(() => ({}));
+          if (res.status === 402 || err.creditError) {
+            setCreditError(`Insufficient credits. Need ${err.required ?? '?'} credits (balance: ${err.balance ?? 0}).`);
+            break; // Stop generating more formats
+          }
           console.error(`Generation failed for ${fmt.channelId}:`, err);
         }
       } catch (err) {
@@ -654,6 +660,14 @@ export function AssetGeneratorPanel({ onGenerate, onResults, isGenerating, onCap
             <span className="font-medium text-zinc-700">
               {(CREDIT_COSTS[selectedModel.id] ?? 30) * selectedCount} credits ({selectedCount} format{selectedCount > 1 ? 's' : ''})
             </span>
+          </div>
+        )}
+        {creditError && (
+          <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-[10px] text-red-700 font-medium">{creditError}</p>
+            <a href="/pricing" className="text-[10px] text-red-600 underline hover:text-red-800">
+              Upgrade your plan
+            </a>
           </div>
         )}
         <button
