@@ -1,21 +1,14 @@
 'use client';
 
 import { Suspense, useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { CreditUsageChart } from '@/components/dashboard/CreditUsageChart';
 import { PlanCard } from '@/components/dashboard/PlanCard';
-import { createClient } from '@/lib/supabase/client';
+import { useCreditData } from '@/contexts/credit-context';
 import { LayoutDashboard, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-
-interface BalanceData {
-  balance: number;
-  plan: string;
-  monthlyQuota: number;
-  resetAt: string | null;
-}
 
 interface UsageData {
   totalUsed: number;
@@ -24,10 +17,9 @@ interface UsageData {
 }
 
 function DashboardContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(true);
-  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
+  const { balance, plan, monthlyQuota, resetAt, isLoading: balanceLoading } = useCreditData();
+  const [usageLoading, setUsageLoading] = useState(true);
   const [usageData, setUsageData] = useState<UsageData | null>(null);
   const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
   const [fetchError, setFetchError] = useState(false);
@@ -39,29 +31,22 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
+  // Fetch only usage data — balance comes from CreditProvider
   useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        router.push('/login?next=/dashboard');
-        return;
-      }
-
-      Promise.all([
-        fetch('/api/credits/balance').then((r) => r.ok ? r.json() : null),
-        fetch('/api/credits/usage').then((r) => r.ok ? r.json() : null),
-      ]).then(([balance, usage]) => {
-        setBalanceData(balance);
+    fetch('/api/credits/usage')
+      .then((r) => r.ok ? r.json() : null)
+      .then((usage) => {
         setUsageData(usage);
-        setLoading(false);
-      }).catch((err) => {
-        console.error('Failed to fetch dashboard data:', err);
+        setUsageLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch usage data:', err);
         setFetchError(true);
-        setLoading(false);
+        setUsageLoading(false);
       });
-    });
-  }, [router]);
+  }, []);
+
+  const loading = balanceLoading && balance === null || usageLoading;
 
   return (
     <>
@@ -119,23 +104,23 @@ function DashboardContent() {
         </div>
       ) : (
         <div className="space-y-6">
-          {balanceData && (
+          {balance !== null && (
             <PlanCard
-              plan={balanceData.plan}
-              balance={balanceData.balance}
-              monthlyQuota={balanceData.monthlyQuota}
-              resetAt={balanceData.resetAt}
+              plan={plan}
+              balance={balance}
+              monthlyQuota={monthlyQuota}
+              resetAt={resetAt}
             />
           )}
 
-          {usageData && balanceData && (
+          {usageData && balance !== null && (
             <div className="border border-zinc-200 rounded-xl p-6">
               <h2 className="text-sm font-medium text-zinc-900 mb-4">Credit Usage</h2>
               <CreditUsageChart
                 dailyUsage={usageData.dailyUsage}
                 modelUsage={usageData.modelUsage}
                 totalUsed={usageData.totalUsed}
-                monthlyQuota={balanceData.monthlyQuota}
+                monthlyQuota={monthlyQuota}
               />
             </div>
           )}

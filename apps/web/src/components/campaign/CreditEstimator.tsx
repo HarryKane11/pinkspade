@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { getCreditCost } from '@/lib/credits';
+import { useCreditBalance } from '@/contexts/credit-context';
 
 interface CreditEstimatorProps {
   modelId: string;
@@ -11,14 +11,7 @@ interface CreditEstimatorProps {
 }
 
 export function CreditEstimator({ modelId, formatCount, variationCount }: CreditEstimatorProps) {
-  const [balance, setBalance] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch('/api/credits/balance')
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => d && setBalance(d.balance ?? d.credits ?? null))
-      .catch(() => {});
-  }, []);
+  const balance = useCreditBalance();
 
   const costPerFormat = getCreditCost(modelId);
   const totalCost = costPerFormat * formatCount * variationCount;

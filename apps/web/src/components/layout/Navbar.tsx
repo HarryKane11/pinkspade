@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { Coins, ChevronDown } from 'lucide-react';
+import { useCreditBalance, useCreditPlan, useCreditLoading } from '@/contexts/credit-context';
 
 interface NavbarProps {
   onStartSetup?: () => void;
@@ -22,8 +23,9 @@ export function Navbar({ onStartSetup }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [creditBalance, setCreditBalance] = useState<number | null>(null);
-  const [creditPlan, setCreditPlan] = useState<string>('free');
+  const creditBalance = useCreditBalance();
+  const creditPlan = useCreditPlan();
+  const creditLoading = useCreditLoading();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -42,23 +44,6 @@ export function Navbar({ onStartSetup }: NavbarProps) {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Fetch credit balance when user is logged in
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    fetch('/api/credits/balance')
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (cancelled) return;
-        if (data) {
-          setCreditBalance(data.balance);
-          setCreditPlan(data.plan);
-        }
-      })
-      .catch((err) => { console.error('Failed to fetch credit balance:', err); });
-    return () => { cancelled = true; };
-  }, [user]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -134,12 +119,14 @@ export function Navbar({ onStartSetup }: NavbarProps) {
               </Link>
 
               {/* Credit badge */}
-              {creditBalance !== null && (
+              {creditLoading && creditBalance === null ? (
+                <div className="w-16 h-6 bg-zinc-100 rounded-full animate-pulse" />
+              ) : creditBalance !== null ? (
                 <div className="flex items-center gap-1 px-2 py-1 bg-zinc-100 rounded-full text-[10px] font-medium text-zinc-600">
                   <Coins className="w-3 h-3 text-amber-500" />
                   {creditBalance.toLocaleString()}
                 </div>
-              )}
+              ) : null}
 
               {/* User avatar + dropdown */}
               <div className="relative" ref={dropdownRef}>

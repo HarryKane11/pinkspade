@@ -12,7 +12,16 @@ export async function GET() {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  // Get current month's usage grouped by day
+  // Try SQL aggregation via RPC first (much faster for large ledgers)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_monthly_usage', {
+    p_user_id: user.id,
+  });
+
+  if (!rpcError && rpcData) {
+    return NextResponse.json(rpcData);
+  }
+
+  // Fallback: JS aggregation (works before migration is applied)
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -21,7 +30,7 @@ export async function GET() {
     .from('credit_ledger')
     .select('amount, type, model_id, created_at')
     .eq('user_id', user.id)
-    .lt('amount', 0) // only debits
+    .lt('amount', 0)
     .gte('created_at', startOfMonth.toISOString())
     .order('created_at', { ascending: true });
 
@@ -29,23 +38,27 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Aggregate by day
-  const dailyUsage: Record<string, number> = {};
-  const modelUsage: Record<string, number> = {};
+  // Aggregate into arrays (matching CreditUsageChart's expected shape)
+  const dailyMap: Record<string, number> = {};
+  const modelMap: Record<string, { total: number; count: number }> = {};
 
   for (const entry of data ?? []) {
     const day = new Date(entry.created_at).toISOString().split('T')[0];
-    dailyUsage[day] = (dailyUsage[day] ?? 0) + Math.abs(entry.amount);
+    dailyMap[day] = (dailyMap[day] ?? 0) + Math.abs(entry.amount);
 
     const model = entry.model_id ?? 'text';
-    modelUsage[model] = (modelUsage[model] ?? 0) + Math.abs(entry.amount);
+    if (!modelMap[model]) modelMap[model] = { total: 0, count: 0 };
+    modelMap[model].total += Math.abs(entry.amount);
+    modelMap[model].count += 1;
   }
 
-  const totalUsed = Object.values(dailyUsage).reduce((sum, v) => sum + v, 0);
+  const dailyUsage = Object.entries(dailyMap).map(([date, credits]) => ({ date, credits }));
+  const modelUsage = Object.entries(modelMap).map(([model_id, { total, count }]) => ({
+    model_id,
+    total_credits: total,
+    count,
+  }));
+  const totalUsed = dailyUsage.reduce((sum, d) => sum + d.credits, 0);
 
-  return NextResponse.json({
-    totalUsed,
-    dailyUsage,
-    modelUsage,
-  });
+  return NextResponse.json({ totalUsed, dailyUsage, modelUsage });
 }
