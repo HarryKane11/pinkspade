@@ -8,6 +8,7 @@ import { getCategories, getPresetsByCategory } from '@/lib/shared/channel-preset
 import { FAL_MODELS } from '@/lib/fal';
 import { BrandPresetCard } from './BrandPresetCard';
 import { CreditEstimator } from './CreditEstimator';
+import { BrandDNAModal } from '@/components/brand/BrandDNAModal';
 import type { CampaignData, CampaignFormat, CampaignBrandDna } from './CampaignWizard';
 
 interface Step1SetupProps {
@@ -22,6 +23,7 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
   const [customHeight, setCustomHeight] = useState('1080');
   const [brands, setBrands] = useState<Array<{ id: string; name: string; colors: Record<string, string>; typography: Record<string, string>; tone?: Record<string, unknown> }>>([]);
   const [showBrandModal, setShowBrandModal] = useState(false);
+  const [showBrandDnaModal, setShowBrandDnaModal] = useState(false);
 
   const categories = getCategories();
   const selectedCount = data.formats.filter((f) => f.checked).length;
@@ -227,6 +229,7 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
             <BrandPresetCard
               brandDna={data.brandDna}
               onChangeBrand={() => setShowBrandModal(true)}
+              onExtractNew={() => setShowBrandDnaModal(true)}
               onSkip={() => { update('brandId', null); update('brandDna', null); }}
             />
           </div>
@@ -277,6 +280,24 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
           </button>
         </div>
       </motion.div>
+
+      {/* Brand DNA extraction modal */}
+      <BrandDNAModal
+        open={showBrandDnaModal}
+        onClose={() => {
+          setShowBrandDnaModal(false);
+          // Reload brands and select the latest one
+          fetch('/api/brands')
+            .then((r) => r.ok ? r.json() : { brands: [] })
+            .then((d) => {
+              setBrands(d.brands || []);
+              if (d.brands?.[0]) {
+                selectBrand(d.brands[0]);
+              }
+            })
+            .catch(() => {});
+        }}
+      />
 
       {/* Brand selector modal */}
       {showBrandModal && (

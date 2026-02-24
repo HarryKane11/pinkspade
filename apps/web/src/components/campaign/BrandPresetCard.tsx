@@ -6,15 +6,22 @@ import type { CampaignBrandDna } from './CampaignWizard';
 interface BrandPresetCardProps {
   brandDna: CampaignBrandDna | null;
   onChangeBrand: () => void;
+  onExtractNew: () => void;
   onSkip: () => void;
 }
 
-export function BrandPresetCard({ brandDna, onChangeBrand, onSkip }: BrandPresetCardProps) {
+export function BrandPresetCard({ brandDna, onChangeBrand, onExtractNew, onSkip }: BrandPresetCardProps) {
   if (!brandDna) {
     return (
       <div className="border border-dashed border-zinc-300 rounded-xl p-5 text-center">
         <p className="text-sm text-zinc-500 mb-3">브랜드 프리셋을 선택하면 색상, 폰트, 톤이 자동 적용됩니다.</p>
         <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={onExtractNew}
+            className="px-4 py-2 text-xs font-medium bg-pink-500 text-white rounded-lg hover:bg-pink-400 transition-colors"
+          >
+            새 브랜드 추출
+          </button>
           <button
             onClick={onChangeBrand}
             className="px-4 py-2 text-xs font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
