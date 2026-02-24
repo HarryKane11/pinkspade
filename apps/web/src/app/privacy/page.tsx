@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 
-export const metadata = {
-  title: 'Privacy Policy - Pink Spade',
-  description: 'Pink Spade Privacy Policy. Learn how we collect, use, and protect your information.',
+export const metadata: Metadata = {
+  title: '개인정보처리방침',
+  description:
+    'Pink Spade 개인정보처리방침. 수집하는 정보, 사용 방법, 보호 조치를 안내합니다.',
+  alternates: {
+    canonical: '/privacy',
+  },
 };
 
 export default function PrivacyPage() {

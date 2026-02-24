@@ -162,15 +162,49 @@ const slideVariants = {
 
 const TOTAL_STEPS = 4;
 
+/** Read & normalize session draft synchronously (for lazy useState init) */
+function readSessionDraft(): { step: number; data: CampaignData } | null {
+  try {
+    const saved = sessionStorage.getItem('campaignDraft');
+    if (!saved) return null;
+    const { step: savedStep, data: savedData } = JSON.parse(saved);
+    if (!savedData || typeof savedStep !== 'number') return null;
+    // Normalize arrays
+    if (!Array.isArray(savedData.formats)) savedData.formats = [];
+    if (!Array.isArray(savedData.moods)) savedData.moods = [];
+    if (!Array.isArray(savedData.forbiddenWords)) savedData.forbiddenWords = [];
+    if (!Array.isArray(savedData.requiredPhrases)) savedData.requiredPhrases = [];
+    if (!Array.isArray(savedData.concepts)) savedData.concepts = [];
+    if (!Array.isArray(savedData.complianceResults)) savedData.complianceResults = [];
+    for (const concept of savedData.concepts) {
+      if (!Array.isArray(concept.assets)) { concept.assets = []; continue; }
+      for (const asset of concept.assets) {
+        if (!Array.isArray(asset.textBoxes)) asset.textBoxes = [];
+      }
+    }
+    return { step: savedStep, data: savedData };
+  } catch {
+    return null;
+  }
+}
+
 interface CampaignWizardProps {
   campaignId?: string | null;
 }
 
 export function CampaignWizard({ campaignId }: CampaignWizardProps = {}) {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  // Synchronously restore from sessionStorage so the first render already
+  // shows the correct step (avoids flash of Step 0 when Quick Mode sets step 2)
+  const [step, setStep] = useState(() => {
+    if (campaignId) return 0; // will be set async from Supabase
+    return readSessionDraft()?.step ?? 0;
+  });
   const [direction, setDirection] = useState(1);
-  const [data, setData] = useState<CampaignData>(INITIAL_DATA);
+  const [data, setData] = useState<CampaignData>(() => {
+    if (campaignId) return INITIAL_DATA; // will be set async from Supabase
+    return readSessionDraft()?.data ?? INITIAL_DATA;
+  });
   const [saving, setSaving] = useState(false);
   const prevStepRef = useRef(step);
 
@@ -262,59 +296,35 @@ export function CampaignWizard({ campaignId }: CampaignWizardProps = {}) {
     sessionStorage.setItem('campaignDraft', JSON.stringify({ step, data }));
   }, [step, data]);
 
-  // Restore on mount: load from Supabase if campaignId, else sessionStorage
+  // Restore from Supabase when campaignId is provided
+  // (sessionStorage restoration is handled synchronously in useState initializers)
   useEffect(() => {
-    if (campaignId) {
-      getCampaignById(campaignId).then((campaign) => {
-        if (campaign?.metadata) {
-          const meta = campaign.metadata as { step?: number; data?: CampaignData };
-          const savedData = meta.data;
-          const savedStep = meta.step;
-          if (savedData) {
-            // Normalize arrays
-            if (!Array.isArray(savedData.formats)) savedData.formats = [];
-            if (!Array.isArray(savedData.moods)) savedData.moods = [];
-            if (!Array.isArray(savedData.forbiddenWords)) savedData.forbiddenWords = [];
-            if (!Array.isArray(savedData.requiredPhrases)) savedData.requiredPhrases = [];
-            if (!Array.isArray(savedData.concepts)) savedData.concepts = [];
-            if (!Array.isArray(savedData.complianceResults)) savedData.complianceResults = [];
-            for (const concept of savedData.concepts) {
-              if (!Array.isArray(concept.assets)) { concept.assets = []; continue; }
-              for (const asset of concept.assets) {
-                if (!Array.isArray(asset.textBoxes)) asset.textBoxes = [];
-              }
+    if (!campaignId) return;
+    getCampaignById(campaignId).then((campaign) => {
+      if (campaign?.metadata) {
+        const meta = campaign.metadata as { step?: number; data?: CampaignData };
+        const savedData = meta.data;
+        const savedStep = meta.step;
+        if (savedData) {
+          // Normalize arrays
+          if (!Array.isArray(savedData.formats)) savedData.formats = [];
+          if (!Array.isArray(savedData.moods)) savedData.moods = [];
+          if (!Array.isArray(savedData.forbiddenWords)) savedData.forbiddenWords = [];
+          if (!Array.isArray(savedData.requiredPhrases)) savedData.requiredPhrases = [];
+          if (!Array.isArray(savedData.concepts)) savedData.concepts = [];
+          if (!Array.isArray(savedData.complianceResults)) savedData.complianceResults = [];
+          for (const concept of savedData.concepts) {
+            if (!Array.isArray(concept.assets)) { concept.assets = []; continue; }
+            for (const asset of concept.assets) {
+              if (!Array.isArray(asset.textBoxes)) asset.textBoxes = [];
             }
-            savedData.id = campaign.id;
-            setData(savedData);
-            if (typeof savedStep === 'number') setStep(savedStep);
           }
+          savedData.id = campaign.id;
+          setData(savedData);
+          if (typeof savedStep === 'number') setStep(savedStep);
         }
-      });
-      return;
-    }
-
-    try {
-      const saved = sessionStorage.getItem('campaignDraft');
-      if (saved) {
-        const { step: savedStep, data: savedData } = JSON.parse(saved);
-        if (!Array.isArray(savedData.formats)) savedData.formats = [];
-        if (!Array.isArray(savedData.moods)) savedData.moods = [];
-        if (!Array.isArray(savedData.forbiddenWords)) savedData.forbiddenWords = [];
-        if (!Array.isArray(savedData.requiredPhrases)) savedData.requiredPhrases = [];
-        if (!Array.isArray(savedData.concepts)) savedData.concepts = [];
-        if (!Array.isArray(savedData.complianceResults)) savedData.complianceResults = [];
-        for (const concept of savedData.concepts) {
-          if (!Array.isArray(concept.assets)) { concept.assets = []; continue; }
-          for (const asset of concept.assets) {
-            if (!Array.isArray(asset.textBoxes)) asset.textBoxes = [];
-          }
-        }
-        setStep(savedStep);
-        setData(savedData);
       }
-    } catch {
-      sessionStorage.removeItem('campaignDraft');
-    }
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

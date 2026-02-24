@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 
-export const metadata = {
-  title: 'Terms of Service - Pink Spade',
-  description: 'Pink Spade Terms of Service. Read the terms governing your use of our AI creative asset platform.',
+export const metadata: Metadata = {
+  title: '이용약관',
+  description:
+    'Pink Spade 서비스 이용약관. AI 크리에이티브 에셋 플랫폼 사용에 관한 약관을 확인하세요.',
+  alternates: {
+    canonical: '/terms',
+  },
 };
 
 export default function TermsPage() {

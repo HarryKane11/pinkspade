@@ -1,7 +1,10 @@
 import { Polar } from '@polar-sh/sdk';
 
+const isSandbox = process.env.POLAR_SANDBOX === 'true';
+
 export const polar = new Polar({
   accessToken: process.env.POLAR_API_KEY ?? '',
+  ...(isSandbox && { server: 'sandbox' as const }),
 });
 
 // Product IDs from Polar (configured in .env.local)

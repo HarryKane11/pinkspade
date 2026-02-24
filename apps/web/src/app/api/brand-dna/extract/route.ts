@@ -127,11 +127,11 @@ Response format:
         content: [
           ...(screenshotUrl
             ? [
-                {
-                  type: 'image_url' as const,
-                  image_url: { url: screenshotUrl },
-                },
-              ]
+              {
+                type: 'image_url' as const,
+                image_url: { url: screenshotUrl },
+              },
+            ]
             : []),
           {
             type: 'text' as const,
@@ -149,7 +149,7 @@ Provide a complete Brand DNA profile in the specified JSON format.`,
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'google/gemini-3-flash-preview',
+      model: 'google/gemini-2.0-flash-exp:free',
       messages,
       temperature: 0.3,
     });

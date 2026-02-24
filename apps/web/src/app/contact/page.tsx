@@ -1,10 +1,15 @@
+import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Mail, MapPin, Clock } from 'lucide-react';
 
-export const metadata = {
-  title: 'Contact - Pink Spade',
-  description: 'Get in touch with the Pink Spade team for support, questions, or partnerships.',
+export const metadata: Metadata = {
+  title: '문의하기',
+  description:
+    'Pink Spade 팀에 문의하세요. 서비스 관련 질문, 기술 지원, 파트너십 등 다양한 문의를 환영합니다.',
+  alternates: {
+    canonical: '/contact',
+  },
 };
 
 export default function ContactPage() {

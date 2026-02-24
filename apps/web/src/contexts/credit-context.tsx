@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { createClient } from '@/lib/supabase/client';
 
 // --- Store types ---
@@ -136,20 +137,28 @@ export function useCreditPlan() {
 }
 
 export function useCreditData() {
-  return useCreditStore((s) => ({
+  const store = useContext(CreditContext);
+  if (!store) {
+    throw new Error('useCreditData must be used within CreditProvider');
+  }
+  return useStore(store, useShallow((s: CreditStore) => ({
     balance: s.balance,
     plan: s.plan,
     monthlyQuota: s.monthlyQuota,
     resetAt: s.resetAt,
     isLoading: s.isLoading,
-  }));
+  })));
 }
 
 export function useCreditActions() {
-  return useCreditStore((s) => ({
+  const store = useContext(CreditContext);
+  if (!store) {
+    throw new Error('useCreditActions must be used within CreditProvider');
+  }
+  return useStore(store, useShallow((s: CreditStore) => ({
     fetchBalance: s.fetchBalance,
     invalidate: s.invalidate,
-  }));
+  })));
 }
 
 export function useCreditLoading() {
