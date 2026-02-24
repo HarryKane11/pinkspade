@@ -195,28 +195,33 @@ export function CampaignWizard() {
     sessionStorage.setItem('campaignDraft', JSON.stringify({ step, data }));
   }, [step, data]);
 
-  // Restore on mount (normalize old data missing textBoxes)
+  // Restore on mount (normalize old/corrupted session data)
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem('campaignDraft');
       if (saved) {
         const { step: savedStep, data: savedData } = JSON.parse(saved);
+        // Ensure all array fields exist (guards against old session data)
+        if (!Array.isArray(savedData.formats)) savedData.formats = [];
+        if (!Array.isArray(savedData.moods)) savedData.moods = [];
+        if (!Array.isArray(savedData.forbiddenWords)) savedData.forbiddenWords = [];
+        if (!Array.isArray(savedData.requiredPhrases)) savedData.requiredPhrases = [];
+        if (!Array.isArray(savedData.concepts)) savedData.concepts = [];
+        if (!Array.isArray(savedData.complianceResults)) savedData.complianceResults = [];
         // Ensure all assets have textBoxes array (added in v2)
-        if (savedData.concepts) {
-          for (const concept of savedData.concepts) {
-            if (concept.assets) {
-              for (const asset of concept.assets) {
-                if (!Array.isArray(asset.textBoxes)) {
-                  asset.textBoxes = [];
-                }
-              }
-            }
+        for (const concept of savedData.concepts) {
+          if (!Array.isArray(concept.assets)) { concept.assets = []; continue; }
+          for (const asset of concept.assets) {
+            if (!Array.isArray(asset.textBoxes)) asset.textBoxes = [];
           }
         }
         setStep(savedStep);
         setData(savedData);
       }
-    } catch { /* ignore */ }
+    } catch {
+      // Corrupted session data — clear it
+      sessionStorage.removeItem('campaignDraft');
+    }
   }, []);
 
   const stepContent = [
