@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Download, FileDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCreditCost } from '@/lib/credits';
+import { compositeAsset } from '@/lib/canvas-export';
 import { ComplianceChecklist } from './ComplianceChecklist';
 import type { CampaignData, ComplianceCheck, CampaignAsset } from './CampaignWizard';
 
@@ -94,9 +95,13 @@ export function Step4Review({ data, update, onBack, onGoToStep }: Step4ReviewPro
     try {
       for (const asset of assets) {
         if (!asset.imageUrl) continue;
-        const response = await fetch(asset.imageUrl);
-        const blob = await response.blob();
         const fmt = selectedFormats.find((f) => f.id === asset.formatId);
+        const blob = await compositeAsset(
+          asset.imageUrl,
+          asset.textBoxes ?? [],
+          fmt?.width ?? 1080,
+          fmt?.height ?? 1080,
+        );
         const filename = `${fmt?.label || 'asset'}_${fmt?.width}x${fmt?.height}.png`;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -116,9 +121,13 @@ export function Step4Review({ data, update, onBack, onGoToStep }: Step4ReviewPro
 
   const handleExportSingle = useCallback(async (asset: CampaignAsset) => {
     if (!asset.imageUrl) return;
-    const response = await fetch(asset.imageUrl);
-    const blob = await response.blob();
     const fmt = selectedFormats.find((f) => f.id === asset.formatId);
+    const blob = await compositeAsset(
+      asset.imageUrl,
+      asset.textBoxes ?? [],
+      fmt?.width ?? 1080,
+      fmt?.height ?? 1080,
+    );
     const filename = `${fmt?.label || 'asset'}_${fmt?.width}x${fmt?.height}.png`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
