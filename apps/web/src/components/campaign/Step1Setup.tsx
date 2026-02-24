@@ -6,6 +6,8 @@ import { Plus, X, ChevronDown, Palette, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCategories, getPresetsByCategory } from '@/lib/shared/channel-presets';
 import { FAL_MODELS } from '@/lib/fal';
+import { getAllBrands } from '@/lib/brand-storage';
+import type { StoredBrandDna } from '@/lib/brand-storage';
 import { CreditEstimator } from './CreditEstimator';
 import { BrandDNAModal } from '@/components/brand/BrandDNAModal';
 import type { CampaignData, CampaignFormat, CampaignBrandDna } from './CampaignWizard';
@@ -20,7 +22,7 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
   const [showCustomSize, setShowCustomSize] = useState(false);
   const [customWidth, setCustomWidth] = useState('1080');
   const [customHeight, setCustomHeight] = useState('1080');
-  const [brands, setBrands] = useState<Array<{ id: string; name: string; colors: Record<string, string>; typography: Record<string, string>; tone?: Record<string, unknown> }>>([]);
+  const [brands, setBrands] = useState<StoredBrandDna[]>([]);
   const [showBrandDnaModal, setShowBrandDnaModal] = useState(false);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
@@ -28,12 +30,9 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
   const selectedCount = data.formats.filter((f) => f.checked).length;
   const imageModels = FAL_MODELS.filter((m) => m.type === 'image');
 
-  // Load brands
+  // Load brands (getAllBrands flattens nested dna_data from Supabase)
   useEffect(() => {
-    fetch('/api/brands')
-      .then((r) => r.ok ? r.json() : { brands: [] })
-      .then((d) => setBrands(d.brands || []))
-      .catch(() => {});
+    getAllBrands().then(setBrands).catch(() => {});
   }, []);
 
   // Load brand DNA from session if available
@@ -134,9 +133,16 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
     setCustomHeight('1080');
   }, [customWidth, customHeight, data.formats, update]);
 
-  const selectBrand = useCallback((brand: typeof brands[0]) => {
+  const selectBrand = useCallback((brand: StoredBrandDna) => {
     update('brandId', brand.id);
-    update('brandDna', brand as CampaignBrandDna);
+    update('brandDna', {
+      id: brand.id,
+      name: brand.brandName,
+      brandName: brand.brandName,
+      colors: brand.colors,
+      typography: brand.typography,
+      tone: brand.tone,
+    } as CampaignBrandDna);
   }, [update]);
 
   const clearBrand = useCallback(() => {
@@ -396,46 +402,106 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
                 <>
                   {brands.map((b) => {
                     const isSelected = data.brandId === b.id;
-                    const colorSwatches = [b.colors?.primary, b.colors?.secondary, b.colors?.accent].filter(Boolean);
-                    const font = b.typography?.heading || b.typography?.headingFont || '';
+                    const namedColors = [b.colors?.primary, b.colors?.secondary, b.colors?.accent, b.colors?.background, b.colors?.text].filter(Boolean) as string[];
+                    const paletteExtras = (b.colors?.palette ?? []).filter((c) => !namedColors.includes(c));
+                    const allColors = [...namedColors, ...paletteExtras];
+                    const compactColors = allColors.slice(0, 5);
+                    const headingFont = b.typography?.heading || '';
+                    const bodyFont = b.typography?.body || '';
+                    const hasTwoFonts = bodyFont && bodyFont !== headingFont;
+                    const toneKeywords = b.tone?.keywords ?? [];
+
                     return (
                       <button
                         key={b.id}
                         onClick={() => isSelected ? clearBrand() : selectBrand(b)}
                         className={cn(
-                          'w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left',
+                          'w-full flex flex-col gap-2 px-4 py-3 rounded-xl border transition-all text-left',
                           isSelected
                             ? 'border-pink-500 bg-pink-50'
                             : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50',
                         )}
                       >
-                        {/* Color swatches */}
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
-                          {colorSwatches.length > 0 ? (
-                            colorSwatches.map((c, i) => (
-                              <div
-                                key={i}
-                                className="w-4 h-4 rounded-full border border-zinc-200"
-                                style={{ backgroundColor: c }}
-                              />
-                            ))
-                          ) : (
-                            <Palette className="w-4 h-4 text-zinc-300" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className={cn('text-sm font-medium block truncate', isSelected ? 'text-pink-700' : 'text-zinc-900')}>
-                            {b.name}
-                          </span>
-                          {font && (
-                            <span className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                              <Type className="w-3 h-3" />
-                              {font}
+                        {/* Top row: color swatches + brand name */}
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="flex items-center gap-0.5 flex-shrink-0">
+                            {compactColors.length > 0 ? (
+                              compactColors.map((c, i) => (
+                                <div
+                                  key={i}
+                                  className="w-4 h-4 rounded-full border border-zinc-200"
+                                  style={{ backgroundColor: c }}
+                                />
+                              ))
+                            ) : (
+                              <Palette className="w-4 h-4 text-zinc-300" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className={cn('text-sm font-medium block truncate', isSelected ? 'text-pink-700' : 'text-zinc-900')}>
+                              {b.brandName}
                             </span>
+                            {headingFont && !isSelected && (
+                              <span className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
+                                <Type className="w-3 h-3" />
+                                {headingFont}
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <div className="w-2 h-2 rounded-full bg-pink-500 flex-shrink-0" />
                           )}
                         </div>
+
+                        {/* Expanded DNA details (only when selected) */}
                         {isSelected && (
-                          <div className="w-2 h-2 rounded-full bg-pink-500 flex-shrink-0" />
+                          <div className="w-full space-y-2 pt-1 border-t border-pink-200/50">
+                            {/* Full color palette */}
+                            {allColors.length > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <Palette className="w-3 h-3 text-pink-400 flex-shrink-0" />
+                                <div className="flex items-center gap-0.5 flex-wrap">
+                                  {allColors.slice(0, 10).map((c, i) => (
+                                    <div
+                                      key={i}
+                                      className="w-5 h-5 rounded-md border border-zinc-200/80"
+                                      style={{ backgroundColor: c }}
+                                      title={c}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Typography */}
+                            {headingFont && (
+                              <div className="flex items-center gap-1.5 text-[11px] text-pink-700/70">
+                                <Type className="w-3 h-3 text-pink-400 flex-shrink-0" />
+                                <span className="bg-pink-100/80 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                  {headingFont}
+                                </span>
+                                {hasTwoFonts && (
+                                  <>
+                                    <span className="text-pink-300">+</span>
+                                    <span className="bg-pink-100/80 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                      {bodyFont}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Tone keywords */}
+                            {toneKeywords.length > 0 && (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {toneKeywords.slice(0, 4).map((kw, i) => (
+                                  <span key={i} className="px-1.5 py-0.5 bg-pink-100/80 text-pink-600 rounded-full text-[10px] font-medium">
+                                    {kw}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </button>
                     );
@@ -514,12 +580,11 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
         onClose={() => {
           setShowBrandDnaModal(false);
           // Reload brands and select the latest one
-          fetch('/api/brands')
-            .then((r) => r.ok ? r.json() : { brands: [] })
-            .then((d) => {
-              setBrands(d.brands || []);
-              if (d.brands?.[0]) {
-                selectBrand(d.brands[0]);
+          getAllBrands()
+            .then((loaded) => {
+              setBrands(loaded);
+              if (loaded[0]) {
+                selectBrand(loaded[0]);
               }
             })
             .catch(() => {});
