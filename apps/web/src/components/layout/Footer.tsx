@@ -8,7 +8,7 @@ export function Footer() {
           href="/"
           className="font-medium tracking-tight text-zinc-900 text-sm flex items-center gap-2"
         >
-          <img src="/icon.svg" alt="Pink Spade" className="w-5 h-5" />
+          <img src="/company_logo.png" alt="Pink Spade" className="w-5 h-5" />
           Pink Spade
         </Link>
         <div className="flex items-center gap-6 text-xs text-zinc-500 font-light">

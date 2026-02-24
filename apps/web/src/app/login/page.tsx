@@ -32,7 +32,7 @@ function LoginContent() {
     <div className="w-full max-w-sm relative z-10">
       {/* Logo */}
       <div className="flex items-center justify-center gap-2 mb-8">
-        <img src="/logo.png" alt="Pink Spade" className="w-8 h-8" />
+        <img src="/company_logo.png" alt="Pink Spade" className="w-8 h-8" />
         <span className="text-lg font-medium tracking-tight text-zinc-900">
           Pink Spade
         </span>

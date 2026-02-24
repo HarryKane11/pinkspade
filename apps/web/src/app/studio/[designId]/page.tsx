@@ -579,7 +579,7 @@ function StudioContent() {
                       <div className="absolute inset-0 rounded-full bg-pink-100 animate-ping opacity-30" />
                       <div className="absolute inset-2 rounded-full bg-pink-50 animate-pulse" />
                       <img
-                        src="/logo.png"
+                        src="/company_logo.png"
                         alt="Loading"
                         className="absolute inset-0 w-full h-full object-contain p-3 drop-shadow-sm spade-float"
                       />

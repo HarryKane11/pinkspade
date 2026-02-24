@@ -66,7 +66,7 @@ export function StudioToolbar({ onExport, onPreview, onShare }: StudioToolbarPro
       {/* Left: Logo + Breadcrumb */}
       <div className="flex items-center gap-6">
         <Link href="/" className="font-medium tracking-tight text-zinc-900 text-sm flex items-center gap-2 border-r border-zinc-200 pr-6 hover:opacity-80 transition-opacity">
-          <img src="/logo.png" alt="Pink Spade" className="w-6 h-6" />
+          <img src="/company_logo.png" alt="Pink Spade" className="w-6 h-6" />
           Pink Spade
         </Link>
 

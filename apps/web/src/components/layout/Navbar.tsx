@@ -73,7 +73,7 @@ export function Navbar({ onStartSetup }: NavbarProps) {
             href="/"
             className="font-medium tracking-tight text-zinc-900 text-base flex items-center gap-2"
           >
-            <img src="/logo.png" alt="Pink Spade" className="w-6 h-6" />
+            <img src="/company_logo.png" alt="Pink Spade" className="w-6 h-6" />
             Pink Spade
           </Link>
           <div className="hidden md:flex items-center gap-6 text-xs text-zinc-500 font-medium">

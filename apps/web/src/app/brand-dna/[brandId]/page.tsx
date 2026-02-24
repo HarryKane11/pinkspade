@@ -78,7 +78,7 @@ export default function BrandDNADashboardPage() {
       <header className="h-14 bg-white/50 backdrop-blur-md border-b border-zinc-200/50 sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Pink Spade" className="w-6 h-6" />
+            <img src="/company_logo.png" alt="Pink Spade" className="w-6 h-6" />
             <div className="h-4 w-px bg-zinc-200 hidden sm:block" />
             <span className="text-sm font-medium text-zinc-900 hidden sm:block">Workspace</span>
             <ArrowRight className="w-3.5 h-3.5 text-zinc-400 hidden sm:block" />

@@ -56,7 +56,7 @@ export default function RootLayout({
           rel="stylesheet"
           as="style"
           crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"
         />
         <JsonLd
           data={{
@@ -64,7 +64,7 @@ export default function RootLayout({
             '@type': 'Organization',
             name: 'Pink Spade',
             url: SITE_URL,
-            logo: `${SITE_URL}/icon.svg`,
+            logo: `${SITE_URL}/company_logo.png`,
             description: 'AI 기반 브랜드 디자인 자동화 스튜디오',
             address: {
               '@type': 'PostalAddress',

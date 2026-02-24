@@ -312,7 +312,7 @@ export function BrandDNAModal({ open, onClose }: BrandDNAModalProps) {
           <div className="flex flex-col">
             <div className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center mb-6 shadow-md relative">
               <div className="pulse-ring" />
-              <img src="/logo.png" alt="Pink Spade" className="w-6 h-6 relative z-10 animate-pulse" />
+              <img src="/company_logo.png" alt="Pink Spade" className="w-6 h-6 relative z-10 animate-pulse" />
             </div>
             <h2 className="text-2xl font-medium tracking-tight text-zinc-900 mb-2">
               Extracting Brand DNA
