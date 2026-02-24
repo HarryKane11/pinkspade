@@ -14,10 +14,15 @@ import {
   Image as ImageIcon,
   X,
   Sparkles,
+  FileText,
+  Clock,
+  CheckCircle2,
+  Zap,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { BrandDNAModal } from '@/components/brand/BrandDNAModal';
 import { getAllBrands, removeBrand, type StoredBrandDna } from '@/lib/brand-storage';
+import { getAllCampaigns, removeCampaign, type StoredCampaign } from '@/lib/campaign-storage';
 import {
   getDesignsGroupedByBrandAndChannel,
   removeDesignFromHistory,
@@ -35,6 +40,7 @@ function formatDateTime(iso: string) {
 export default function WorkspacePage() {
   const router = useRouter();
   const [brands, setBrands] = useState<StoredBrandDna[]>([]);
+  const [campaigns, setCampaigns] = useState<StoredCampaign[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [designGroups, setDesignGroups] = useState<Record<string, Record<string, DesignHistoryEntry[]>>>({});
   const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set());
@@ -42,12 +48,14 @@ export default function WorkspacePage() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const refreshData = useCallback(async () => {
-    const [b, d] = await Promise.all([
+    const [b, d, c] = await Promise.all([
       getAllBrands(),
       getDesignsGroupedByBrandAndChannel(),
+      getAllCampaigns(),
     ]);
     setBrands(b);
     setDesignGroups(d);
+    setCampaigns(c);
   }, []);
 
   useEffect(() => {
@@ -116,6 +124,15 @@ export default function WorkspacePage() {
     [refreshData]
   );
 
+  const handleRemoveCampaign = useCallback(
+    async (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      await removeCampaign(id);
+      refreshData();
+    },
+    [refreshData]
+  );
+
   const handleModalClose = useCallback(() => {
     setModalOpen(false);
     setTimeout(refreshData, 600);
@@ -151,6 +168,13 @@ export default function WorkspacePage() {
             <p className="text-sm text-zinc-500 mt-1">Manage your saved Brand DNAs and projects.</p>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/campaign/quick"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl text-sm font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-sm"
+            >
+              <Zap className="w-4 h-4" />
+              Quick Mode
+            </Link>
             <Link
               href="/campaign/new"
               className="flex items-center gap-2 px-5 py-2.5 bg-pink-500 text-white rounded-xl text-sm font-medium hover:bg-pink-600 transition-colors shadow-sm"
@@ -275,6 +299,114 @@ export default function WorkspacePage() {
                           day: 'numeric',
                         })}
                       </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Recent Campaigns */}
+        <section className="mt-12">
+          <h2 className="text-sm font-medium text-zinc-700 mb-4">
+            최근 캠페인
+            {campaigns.length > 0 && (
+              <span className="ml-2 text-zinc-400 font-normal">({campaigns.length})</span>
+            )}
+          </h2>
+
+          {campaigns.length === 0 ? (
+            <div className="border border-dashed border-zinc-200 rounded-2xl p-8 text-center">
+              <div className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <FileText className="w-6 h-6 text-zinc-400" />
+              </div>
+              <p className="text-sm font-medium text-zinc-900 mb-1">캠페인이 없습니다</p>
+              <p className="text-xs text-zinc-400">
+                새 캠페인을 만들어 광고 소재를 생성해 보세요.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {campaigns.map((campaign) => {
+                const brandForCampaign = campaign.brandId ? brandMap.get(campaign.brandId) : null;
+                const brandColors = brandForCampaign
+                  ? [brandForCampaign.colors.primary, brandForCampaign.colors.secondary, brandForCampaign.colors.accent].filter(Boolean)
+                  : [];
+                const { date } = formatDateTime(campaign.updatedAt || campaign.createdAt);
+
+                return (
+                  <div
+                    key={campaign.id}
+                    onClick={() => router.push(`/campaign/new?id=${campaign.id}`)}
+                    className="group border border-zinc-200 rounded-xl overflow-hidden hover:border-zinc-400 hover:shadow-md transition-all cursor-pointer"
+                  >
+                    {/* Color strip */}
+                    <div className="h-2 flex">
+                      {brandColors.length > 0 ? (
+                        brandColors.map((hex, i) => (
+                          <div key={i} className="flex-1" style={{ backgroundColor: hex }} />
+                        ))
+                      ) : (
+                        <div className="flex-1 bg-gradient-to-r from-pink-200 to-pink-300" />
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-zinc-900 truncate">
+                            {campaign.name}
+                          </h3>
+                          {campaign.brandName && (
+                            <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
+                              {campaign.brandName}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => handleRemoveCampaign(e, campaign.id)}
+                          className="p-1.5 rounded-md text-zinc-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                          title="캠페인 삭제"
+                          aria-label={`Delete ${campaign.name}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Status badge */}
+                      <div className="flex items-center gap-2 mb-2">
+                        {campaign.status === 'completed' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-medium">
+                            <CheckCircle2 className="w-3 h-3" />
+                            완료
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-medium">
+                            <Clock className="w-3 h-3" />
+                            임시저장
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Target channels */}
+                      {campaign.targetChannels.length > 0 && (
+                        <div className="flex gap-1 mb-2 flex-wrap">
+                          {campaign.targetChannels.slice(0, 4).map((ch) => (
+                            <span key={ch} className="text-[9px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded">
+                              {ch}
+                            </span>
+                          ))}
+                          {campaign.targetChannels.length > 4 && (
+                            <span className="text-[9px] text-zinc-400">
+                              +{campaign.targetChannels.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Date */}
+                      <p className="text-[10px] text-zinc-400">{date}</p>
                     </div>
                   </div>
                 );

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, ChevronDown, Palette, Type } from 'lucide-react';
+import { Plus, X, ChevronDown, Palette, Type, LayoutTemplate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCategories, getPresetsByCategory } from '@/lib/shared/channel-presets';
 import { FAL_MODELS } from '@/lib/fal';
@@ -10,6 +10,8 @@ import { getAllBrands } from '@/lib/brand-storage';
 import type { StoredBrandDna } from '@/lib/brand-storage';
 import { CreditEstimator } from './CreditEstimator';
 import { BrandDNAModal } from '@/components/brand/BrandDNAModal';
+import { TemplateGallery } from './TemplateGallery';
+import type { CampaignTemplate } from '@/lib/campaign-templates';
 import type { CampaignData, CampaignFormat, CampaignBrandDna } from './CampaignWizard';
 
 interface Step1SetupProps {
@@ -25,6 +27,8 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
   const [brands, setBrands] = useState<StoredBrandDna[]>([]);
   const [showBrandDnaModal, setShowBrandDnaModal] = useState(false);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const [showTemplates, setShowTemplates] = useState(true);
+  const [appliedTemplate, setAppliedTemplate] = useState<CampaignTemplate | null>(null);
 
   const categories = getCategories();
   const selectedCount = data.formats.filter((f) => f.checked).length;
@@ -150,6 +154,34 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
     update('brandDna', null);
   }, [update]);
 
+  const applyTemplate = useCallback((template: CampaignTemplate) => {
+    setAppliedTemplate(template);
+    setShowTemplates(false);
+
+    // Pre-check channel formats matching the template
+    const templateIds = new Set(template.channelPresetIds);
+    const updatedFormats = data.formats.map((f) => ({
+      ...f,
+      checked: templateIds.has(f.id),
+    }));
+    update('formats', updatedFormats);
+
+    // Open categories that have checked formats
+    const catsWithChecked = new Set(
+      updatedFormats.filter((f) => f.checked).map((f) => f.channelId),
+    );
+    setOpenCategories(catsWithChecked);
+
+    // Pre-fill Step 2 fields
+    const brandName = data.brandDna?.brandName || data.brandDna?.name || '{brandName}';
+    update('moods', template.moods);
+    update('prompt', template.promptTemplate.replace(/{brandName}/g, brandName));
+    update('headline', template.headlineTemplate.replace(/{brandName}/g, brandName));
+    update('description', template.descriptionTemplate.replace(/{brandName}/g, brandName));
+    update('modelId', template.modelId);
+    update('variationCount', template.variationCount);
+  }, [data.formats, data.brandDna, update]);
+
   // Group formats by channel (exclude 'custom' category from main list)
   const grouped = useMemo(() => categories
     .filter((cat) => cat.id !== 'custom')
@@ -163,6 +195,33 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
 
   return (
     <div>
+      {/* Template Gallery */}
+      {showTemplates && !appliedTemplate && (
+        <TemplateGallery
+          onSelect={applyTemplate}
+          onSkip={() => setShowTemplates(false)}
+        />
+      )}
+
+      {/* Applied template indicator */}
+      {appliedTemplate && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 px-4 py-2.5 mb-4 bg-pink-50 border border-pink-200 rounded-xl"
+        >
+          <LayoutTemplate className="w-4 h-4 text-pink-500" />
+          <span className="text-sm text-pink-700 font-medium">{appliedTemplate.nameKo}</span>
+          <span className="text-xs text-pink-500">템플릿 적용됨</span>
+          <button
+            onClick={() => { setAppliedTemplate(null); setShowTemplates(true); }}
+            className="ml-auto text-xs text-pink-400 hover:text-pink-600 transition-colors"
+          >
+            변경
+          </button>
+        </motion.div>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

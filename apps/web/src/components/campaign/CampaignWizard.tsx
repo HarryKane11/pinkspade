@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { CampaignStepper } from './CampaignStepper';
 import { Step1Setup } from './Step1Setup';
 import { Step2Creative } from './Step2Creative';
 import { Step3Generate } from './Step3Generate';
 import { Step4Review } from './Step4Review';
+import { saveCampaign, getCampaignById } from '@/lib/campaign-storage';
 // Types
 export interface CampaignBrandDna {
   id?: string;
@@ -97,6 +98,7 @@ export interface ComplianceCheck {
 }
 
 export interface CampaignData {
+  id?: string; // Supabase campaign ID (undefined for new campaigns)
   // Step 1
   formats: CampaignFormat[];
   brandId: string | null;
@@ -122,6 +124,7 @@ export interface CampaignData {
 }
 
 const INITIAL_DATA: CampaignData = {
+  id: undefined,
   formats: [],
   brandId: null,
   brandDna: null,
@@ -159,11 +162,17 @@ const slideVariants = {
 
 const TOTAL_STEPS = 4;
 
-export function CampaignWizard() {
+interface CampaignWizardProps {
+  campaignId?: string | null;
+}
+
+export function CampaignWizard({ campaignId }: CampaignWizardProps = {}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [data, setData] = useState<CampaignData>(INITIAL_DATA);
+  const [saving, setSaving] = useState(false);
+  const prevStepRef = useRef(step);
 
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
@@ -190,25 +199,110 @@ export function CampaignWizard() {
     router.push('/workspace');
   }, [router]);
 
+  // Save draft to Supabase
+  const handleSaveDraft = useCallback(async () => {
+    setSaving(true);
+    try {
+      const campaign = await saveCampaign({
+        id: data.id,
+        name: data.brandDna?.brandName
+          ? `${data.brandDna.brandName} 캠페인`
+          : `캠페인 ${new Date().toLocaleDateString('ko-KR')}`,
+        brandId: data.brandId,
+        prompt: data.prompt,
+        status: 'draft',
+        targetChannels: data.formats.filter(f => f.checked).map(f => f.id),
+        moods: data.moods,
+        modelId: data.modelId,
+        variationCount: data.variationCount,
+        headline: data.headline,
+        description: data.description,
+        metadata: { step, data },
+      });
+      if (campaign) {
+        setData(prev => ({ ...prev, id: campaign.id }));
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [step, data]);
+
+  // Auto-save when Step 4 completes (transition to step 3 → step index 3)
+  useEffect(() => {
+    if (step === 3 && prevStepRef.current === 2) {
+      // Entered Step 4 — auto-save as completed
+      const autoSave = async () => {
+        const campaign = await saveCampaign({
+          id: data.id,
+          name: data.brandDna?.brandName
+            ? `${data.brandDna.brandName} 캠페인`
+            : `캠페인 ${new Date().toLocaleDateString('ko-KR')}`,
+          brandId: data.brandId,
+          prompt: data.prompt,
+          status: 'completed',
+          targetChannels: data.formats.filter(f => f.checked).map(f => f.id),
+          moods: data.moods,
+          modelId: data.modelId,
+          variationCount: data.variationCount,
+          headline: data.headline,
+          description: data.description,
+          metadata: { step, data },
+        });
+        if (campaign) {
+          setData(prev => ({ ...prev, id: campaign.id }));
+        }
+      };
+      autoSave();
+    }
+    prevStepRef.current = step;
+  }, [step, data]);
+
   // Save to sessionStorage on data changes
   useEffect(() => {
     sessionStorage.setItem('campaignDraft', JSON.stringify({ step, data }));
   }, [step, data]);
 
-  // Restore on mount (normalize old/corrupted session data)
+  // Restore on mount: load from Supabase if campaignId, else sessionStorage
   useEffect(() => {
+    if (campaignId) {
+      getCampaignById(campaignId).then((campaign) => {
+        if (campaign?.metadata) {
+          const meta = campaign.metadata as { step?: number; data?: CampaignData };
+          const savedData = meta.data;
+          const savedStep = meta.step;
+          if (savedData) {
+            // Normalize arrays
+            if (!Array.isArray(savedData.formats)) savedData.formats = [];
+            if (!Array.isArray(savedData.moods)) savedData.moods = [];
+            if (!Array.isArray(savedData.forbiddenWords)) savedData.forbiddenWords = [];
+            if (!Array.isArray(savedData.requiredPhrases)) savedData.requiredPhrases = [];
+            if (!Array.isArray(savedData.concepts)) savedData.concepts = [];
+            if (!Array.isArray(savedData.complianceResults)) savedData.complianceResults = [];
+            for (const concept of savedData.concepts) {
+              if (!Array.isArray(concept.assets)) { concept.assets = []; continue; }
+              for (const asset of concept.assets) {
+                if (!Array.isArray(asset.textBoxes)) asset.textBoxes = [];
+              }
+            }
+            savedData.id = campaign.id;
+            setData(savedData);
+            if (typeof savedStep === 'number') setStep(savedStep);
+          }
+        }
+      });
+      return;
+    }
+
     try {
       const saved = sessionStorage.getItem('campaignDraft');
       if (saved) {
         const { step: savedStep, data: savedData } = JSON.parse(saved);
-        // Ensure all array fields exist (guards against old session data)
         if (!Array.isArray(savedData.formats)) savedData.formats = [];
         if (!Array.isArray(savedData.moods)) savedData.moods = [];
         if (!Array.isArray(savedData.forbiddenWords)) savedData.forbiddenWords = [];
         if (!Array.isArray(savedData.requiredPhrases)) savedData.requiredPhrases = [];
         if (!Array.isArray(savedData.concepts)) savedData.concepts = [];
         if (!Array.isArray(savedData.complianceResults)) savedData.complianceResults = [];
-        // Ensure all assets have textBoxes array (added in v2)
         for (const concept of savedData.concepts) {
           if (!Array.isArray(concept.assets)) { concept.assets = []; continue; }
           for (const asset of concept.assets) {
@@ -219,9 +313,9 @@ export function CampaignWizard() {
         setData(savedData);
       }
     } catch {
-      // Corrupted session data — clear it
       sessionStorage.removeItem('campaignDraft');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Ensure all array fields are arrays before passing to children
@@ -275,10 +369,11 @@ export function CampaignWizard() {
         <CampaignStepper currentStep={step} onStepClick={goToStep} />
 
         <button
-          onClick={handleExit}
-          className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-600 transition-colors"
+          onClick={handleSaveDraft}
+          disabled={saving}
+          className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
         >
-          <Save className="w-4 h-4" />
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           임시저장
         </button>
       </div>
