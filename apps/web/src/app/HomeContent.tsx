@@ -21,6 +21,7 @@ import {
   Fingerprint,
   MessageSquare,
 } from 'lucide-react';
+import Image from 'next/image';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { BrandDNAModal } from '@/components/brand/BrandDNAModal';
@@ -127,7 +128,7 @@ export default function HomeContent() {
           <div className="flex h-[600px] w-full pt-10 text-left bg-zinc-100">
             {/* Side Nav */}
             <nav className="w-14 border-r border-zinc-200 bg-white flex flex-col items-center py-4 z-10 flex-shrink-0 hidden md:flex">
-              <img src="/logo.png" alt="Pink Spade" className="w-8 h-8 mb-6" />
+              <img src="/icon.svg" alt="Pink Spade" className="w-8 h-8 mb-6" />
               <div className="flex flex-col gap-4 w-full px-2">
                 <button className="p-2 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors flex items-center justify-center">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
@@ -189,10 +190,13 @@ export default function HomeContent() {
 
                 {/* Canvas Mockup */}
                 <div className="w-[320px] h-[400px] md:w-[360px] md:h-[450px] bg-zinc-900 relative shadow-2xl ring-1 ring-zinc-200/50 flex-shrink-0 z-10">
-                  <img
+                  <Image
                     src="/gallery/gallery-2.webp"
-                    className="absolute inset-0 w-full h-full object-cover opacity-60"
+                    fill
+                    sizes="360px"
+                    className="object-cover opacity-60"
                     alt="Background"
+                    priority
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
@@ -307,10 +311,12 @@ export default function HomeContent() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 md:grid-rows-[240px_240px] gap-4">
           {/* Asset 1 */}
           <div className="md:col-span-1 md:row-span-2 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-[3/4] md:aspect-auto shadow-sm">
-            <img
+            <Image
               src="/gallery/gallery-1.webp"
+              fill
+              sizes="(max-width: 768px) 100vw, 25vw"
               alt="Fluid abstract pink aura"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute top-4 left-4 z-10 flex gap-2">
               <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">
@@ -329,10 +335,12 @@ export default function HomeContent() {
 
           {/* Asset 2 */}
           <div className="md:col-span-2 md:row-span-1 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-video md:aspect-auto shadow-sm">
-            <img
+            <Image
               src="/gallery/gallery-2.webp"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               alt="Layered rose wave design"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute top-4 left-4 z-10 flex gap-2">
               <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">
@@ -351,10 +359,12 @@ export default function HomeContent() {
 
           {/* Asset 3 */}
           <div className="md:col-span-2 md:row-span-1 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-video md:aspect-auto shadow-sm">
-            <img
+            <Image
               src="/gallery/gallery-3.webp"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               alt="Translucent pink organic forms"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute top-4 left-4 z-10 flex gap-2">
               <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">
@@ -368,7 +378,7 @@ export default function HomeContent() {
                 </div>
                 <p className="text-sm font-medium text-white">Premium Card Launch</p>
               </div>
-              <button className="w-8 h-8 rounded-full bg-white text-zinc-900 flex items-center justify-center hover:bg-zinc-100 transition-colors">
+              <button aria-label="Download" className="w-8 h-8 rounded-full bg-white text-zinc-900 flex items-center justify-center hover:bg-zinc-100 transition-colors">
                 <Download className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -376,10 +386,12 @@ export default function HomeContent() {
 
           {/* Asset 4 */}
           <div className="md:col-span-1 md:row-span-2 group bento-card relative overflow-hidden rounded-2xl bg-zinc-100 border border-zinc-200 aspect-[3/4] md:aspect-auto shadow-sm">
-            <img
+            <Image
               src="/gallery/gallery-4.webp"
+              fill
+              sizes="(max-width: 768px) 100vw, 25vw"
               alt="Soft pink gradient waves"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute top-4 left-4 z-10 flex gap-2">
               <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-medium text-zinc-900 shadow-sm flex items-center gap-1">

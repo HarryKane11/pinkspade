@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ['@mendable/firecrawl-js'],
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',

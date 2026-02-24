@@ -51,6 +51,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className="antialiased scroll-smooth">
       <head>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
           as="style"
@@ -63,7 +64,7 @@ export default function RootLayout({
             '@type': 'Organization',
             name: 'Pink Spade',
             url: SITE_URL,
-            logo: `${SITE_URL}/logo.png`,
+            logo: `${SITE_URL}/icon.svg`,
             description: 'AI 기반 브랜드 디자인 자동화 스튜디오',
             address: {
               '@type': 'PostalAddress',
