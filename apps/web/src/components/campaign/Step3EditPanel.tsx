@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { X, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { CampaignAsset, CampaignData } from './CampaignWizard';
+import { TextBoxOverlay } from './TextBoxOverlay';
+import type { CampaignAsset, CampaignData, TextBox } from './CampaignWizard';
 
 interface Step3EditPanelProps {
   asset: CampaignAsset;
   brandColors: string[];
+  formatWidth: number;
+  formatHeight: number;
   scopeMode: CampaignData['scopeMode'];
   onScopeChange: (mode: CampaignData['scopeMode']) => void;
   onApply: (updates: Partial<CampaignAsset>) => void;
@@ -19,6 +22,8 @@ interface Step3EditPanelProps {
 export function Step3EditPanel({
   asset,
   brandColors,
+  formatWidth,
+  formatHeight,
   scopeMode,
   onScopeChange,
   onApply,
@@ -32,6 +37,8 @@ export function Step3EditPanel({
   const [backgroundColor, setBackgroundColor] = useState(asset.backgroundColor);
   const [headlineFontSize, setHeadlineFontSize] = useState(asset.headlineFontSize);
   const [descriptionFontSize, setDescriptionFontSize] = useState(asset.descriptionFontSize);
+  const [localTextBoxes, setLocalTextBoxes] = useState<TextBox[]>(asset.textBoxes ?? []);
+  const [selectedTextBoxId, setSelectedTextBoxId] = useState<string | null>(null);
 
   // Sync when asset changes
   useEffect(() => {
@@ -42,7 +49,34 @@ export function Step3EditPanel({
     setBackgroundColor(asset.backgroundColor);
     setHeadlineFontSize(asset.headlineFontSize);
     setDescriptionFontSize(asset.descriptionFontSize);
+    setLocalTextBoxes(asset.textBoxes ?? []);
+    setSelectedTextBoxId(null);
   }, [asset]);
+
+  // Sync headline/description text changes into textBoxes
+  useEffect(() => {
+    setLocalTextBoxes((prev) =>
+      prev.map((tb) => {
+        if (tb.type === 'headline') return { ...tb, text: headline, color: headlineColor, fontSize: headlineFontSize };
+        if (tb.type === 'description') return { ...tb, text: description, color: descriptionColor, fontSize: descriptionFontSize };
+        return tb;
+      }),
+    );
+  }, [headline, description, headlineColor, descriptionColor, headlineFontSize, descriptionFontSize]);
+
+  const handleTextBoxChange = useCallback((updated: TextBox) => {
+    setLocalTextBoxes((prev) => prev.map((tb) => (tb.id === updated.id ? updated : tb)));
+  }, []);
+
+  const selectedTb = localTextBoxes.find((tb) => tb.id === selectedTextBoxId) ?? null;
+
+  const handlePositionChange = useCallback(
+    (field: 'x' | 'y' | 'width' | 'height', value: number) => {
+      if (!selectedTb) return;
+      handleTextBoxChange({ ...selectedTb, [field]: value });
+    },
+    [selectedTb, handleTextBoxChange],
+  );
 
   const handleApply = () => {
     onApply({
@@ -53,6 +87,7 @@ export function Step3EditPanel({
       backgroundColor,
       headlineFontSize,
       descriptionFontSize,
+      textBoxes: localTextBoxes,
     });
   };
 
@@ -72,11 +107,24 @@ export function Step3EditPanel({
         </button>
       </div>
 
-      {/* Preview */}
+      {/* WYSIWYG Preview */}
       <div className="px-4 py-3 border-b border-zinc-100">
-        {asset.imageUrl && (
-          <img src={asset.imageUrl} alt="" className="w-full rounded-lg" />
-        )}
+        <div
+          className="relative w-full rounded-lg overflow-hidden bg-zinc-100"
+          style={{ aspectRatio: `${formatWidth} / ${formatHeight}` }}
+        >
+          {asset.imageUrl && (
+            <img src={asset.imageUrl} alt="" className="w-full h-full object-cover" />
+          )}
+          <TextBoxOverlay
+            textBoxes={localTextBoxes}
+            selectedId={selectedTextBoxId}
+            onSelect={setSelectedTextBoxId}
+            onChange={handleTextBoxChange}
+            formatWidth={formatWidth}
+            formatHeight={formatHeight}
+          />
+        </div>
       </div>
 
       {/* Scope toggle */}
@@ -205,6 +253,61 @@ export function Step3EditPanel({
             </div>
           </div>
         </div>
+
+        {/* Position controls for selected text box */}
+        {selectedTb && (
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              위치 — {selectedTb.type === 'headline' ? '헤드라인' : '설명'}
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">X (%)</label>
+                <input
+                  type="number"
+                  value={Math.round(selectedTb.x)}
+                  min={0}
+                  max={100}
+                  onChange={(e) => handlePositionChange('x', Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Y (%)</label>
+                <input
+                  type="number"
+                  value={Math.round(selectedTb.y)}
+                  min={0}
+                  max={100}
+                  onChange={(e) => handlePositionChange('y', Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">너비 (%)</label>
+                <input
+                  type="number"
+                  value={Math.round(selectedTb.width)}
+                  min={10}
+                  max={100}
+                  onChange={(e) => handlePositionChange('width', Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">높이 (%)</label>
+                <input
+                  type="number"
+                  value={Math.round(selectedTb.height)}
+                  min={5}
+                  max={100}
+                  onChange={(e) => handlePositionChange('height', Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

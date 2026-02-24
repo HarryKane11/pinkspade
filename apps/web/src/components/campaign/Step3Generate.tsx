@@ -355,17 +355,22 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
 
       {/* Edit panel (slide-in) */}
       <AnimatePresence>
-        {editingAsset && (
-          <Step3EditPanel
-            asset={editingAsset}
-            brandColors={brandColors}
-            scopeMode={data.scopeMode}
-            onScopeChange={(mode) => update('scopeMode', mode)}
-            onApply={handleApplyEdit}
-            onReset={handleResetEdit}
-            onClose={() => update('editingAssetId', null)}
-          />
-        )}
+        {editingAsset && (() => {
+          const fmt = selectedFormats.find((f) => f.id === editingAsset.formatId);
+          return (
+            <Step3EditPanel
+              asset={editingAsset}
+              brandColors={brandColors}
+              formatWidth={fmt?.width ?? 1080}
+              formatHeight={fmt?.height ?? 1080}
+              scopeMode={data.scopeMode}
+              onScopeChange={(mode) => update('scopeMode', mode)}
+              onApply={handleApplyEdit}
+              onReset={handleResetEdit}
+              onClose={() => update('editingAssetId', null)}
+            />
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
