@@ -50,8 +50,13 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
     } catch { /* ignore */ }
   }, [data.brandDna, update]);
 
-  // Initialize formats from channel presets (always merge with session state)
+  // Check if channel presets are loaded (not just custom formats)
+  const hasChannelPresets = data.formats.some((f) => f.channelId !== 'custom');
+
+  // Rebuild channel presets whenever they're missing (handles session recovery race condition)
   useEffect(() => {
+    if (hasChannelPresets) return;
+
     const checkedIds = new Set(data.formats.filter((f) => f.checked).map((f) => f.id));
     const customFormats = data.formats.filter((f) => f.channelId === 'custom');
 
@@ -70,7 +75,6 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
         });
       }
     }
-    // Append custom formats from session
     for (const cf of customFormats) {
       allFormats.push(cf);
     }
@@ -85,8 +89,7 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
     } else {
       setOpenCategories(new Set(categories.slice(0, 3).map((c) => c.id)));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+  }, [hasChannelPresets, categories, data.formats, update]);
 
   const toggleFormat = useCallback((id: string) => {
     update('formats', data.formats.map((f) => f.id === id ? { ...f, checked: !f.checked } : f));
