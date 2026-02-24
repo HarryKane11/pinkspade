@@ -40,6 +40,9 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
     const concepts: Concept[] = [];
     for (let v = 0; v < data.variationCount; v++) {
       const conceptId = crypto.randomUUID();
+      const headlineFont = data.brandDna?.typography?.heading || data.brandDna?.typography?.headingFont || 'Pretendard';
+      const bodyFont = data.brandDna?.typography?.body || data.brandDna?.typography?.bodyFont || 'Pretendard';
+      const textColor = data.brandDna?.colors?.text || '#ffffff';
       const assets: CampaignAsset[] = selectedFormats.map((fmt) => ({
         id: crypto.randomUUID(),
         conceptId,
@@ -48,12 +51,36 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
         headline: data.headline,
         description: data.description,
         headlineFontSize: 48,
-        headlineFontFamily: data.brandDna?.typography?.heading || data.brandDna?.typography?.headingFont || 'Pretendard',
-        headlineColor: data.brandDna?.colors?.text || '#ffffff',
+        headlineFontFamily: headlineFont,
+        headlineColor: textColor,
         descriptionFontSize: 24,
-        descriptionFontFamily: data.brandDna?.typography?.body || data.brandDna?.typography?.bodyFont || 'Pretendard',
-        descriptionColor: data.brandDna?.colors?.text || '#ffffff',
+        descriptionFontFamily: bodyFont,
+        descriptionColor: textColor,
         backgroundColor: data.brandDna?.colors?.background || '#1a1a2e',
+        textBoxes: [
+          {
+            id: crypto.randomUUID(),
+            type: 'headline' as const,
+            x: 10, y: 10, width: 80, height: 20,
+            text: data.headline,
+            fontSize: 48,
+            fontFamily: headlineFont,
+            color: textColor,
+            fontWeight: 700,
+            textAlign: 'center' as const,
+          },
+          {
+            id: crypto.randomUUID(),
+            type: 'description' as const,
+            x: 10, y: 35, width: 80, height: 15,
+            text: data.description,
+            fontSize: 24,
+            fontFamily: bodyFont,
+            color: textColor,
+            fontWeight: 400,
+            textAlign: 'center' as const,
+          },
+        ],
         status: 'loading',
       }));
       concepts.push({ id: conceptId, label: CONCEPT_LABELS[v] || `컨셉 ${v + 1}`, assets });
@@ -83,7 +110,7 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
           : undefined;
 
         const body: Record<string, unknown> = {
-          prompt: `${data.prompt}. Headline: "${data.headline}". Description: "${data.description}". Mood: ${moodLabels.join(', ')}. Variation ${ci + 1}.`,
+          prompt: `${data.prompt}. Mood: ${moodLabels.join(', ')}. Leave clean open space for text overlay. Variation ${ci + 1}.`,
           modelId: data.modelId,
           width: fmt.width,
           height: fmt.height,
@@ -159,7 +186,7 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
 
     try {
       const body: Record<string, unknown> = {
-        prompt: `${data.prompt}. Headline: "${asset.headline}". Description: "${asset.description}".`,
+        prompt: `${data.prompt}. Leave clean open space for text overlay.`,
         modelId: data.modelId,
         width: fmt.width,
         height: fmt.height,
@@ -212,14 +239,23 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
 
   const handleResetEdit = useCallback(() => {
     if (!data.editingAssetId) return;
+    const asset = data.concepts.flatMap((c) => c.assets).find((a) => a.id === data.editingAssetId);
+    if (!asset) return;
+    const textColor = data.brandDna?.colors?.text || '#ffffff';
     handleApplyEdit({
       headline: data.headline,
       description: data.description,
-      headlineColor: data.brandDna?.colors?.text || '#ffffff',
-      descriptionColor: data.brandDna?.colors?.text || '#ffffff',
+      headlineColor: textColor,
+      descriptionColor: textColor,
       backgroundColor: data.brandDna?.colors?.background || '#1a1a2e',
       headlineFontSize: 48,
       descriptionFontSize: 24,
+      textBoxes: asset.textBoxes.map((tb) => ({
+        ...tb,
+        text: tb.type === 'headline' ? data.headline : data.description,
+        color: textColor,
+        fontSize: tb.type === 'headline' ? 48 : 24,
+      })),
     });
   }, [data, handleApplyEdit]);
 
