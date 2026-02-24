@@ -288,7 +288,7 @@ export function Step2Creative({ data, update, onNext, onBack }: Step2CreativePro
         >
           <span className="text-xs text-zinc-500">브랜드 톤 적용</span>
           <span className="text-xs font-medium text-zinc-700">
-            {(data.brandDna as any)?.tone?.style || '기본'} · {(data.brandDna as any)?.typography?.heading || (data.brandDna as any)?.typography?.headingFont || 'Pretendard'}
+            {data.brandDna?.tone?.style || '기본'} · {data.brandDna?.typography?.heading || data.brandDna?.typography?.headingFont || 'Pretendard'}
           </span>
         </motion.div>
       )}

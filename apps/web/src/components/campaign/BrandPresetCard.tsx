@@ -1,17 +1,10 @@
 'use client';
 
 import { Palette, Type, MessageSquare, RefreshCw } from 'lucide-react';
-
-interface BrandDnaSummary {
-  id: string;
-  name: string;
-  colors: Record<string, string>;
-  typography: Record<string, string>;
-  tone?: { style?: string; keywords?: string[] };
-}
+import type { CampaignBrandDna } from './CampaignWizard';
 
 interface BrandPresetCardProps {
-  brandDna: BrandDnaSummary | null;
+  brandDna: CampaignBrandDna | null;
   onChangeBrand: () => void;
   onSkip: () => void;
 }

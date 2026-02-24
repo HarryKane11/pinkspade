@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getCategories, getPresetsByCategory, type ChannelPreset } from '@/lib/shared/channel-presets';
-import { FAL_MODELS, type FalModel } from '@/lib/fal';
+import { getCategories, getPresetsByCategory } from '@/lib/shared/channel-presets';
+import { FAL_MODELS } from '@/lib/fal';
 import { BrandPresetCard } from './BrandPresetCard';
 import { CreditEstimator } from './CreditEstimator';
-import type { CampaignData, CampaignFormat } from './CampaignWizard';
+import type { CampaignData, CampaignFormat, CampaignBrandDna } from './CampaignWizard';
 
 interface Step1SetupProps {
   data: CampaignData;
@@ -95,7 +95,7 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
 
   const selectBrand = useCallback((brand: typeof brands[0]) => {
     update('brandId', brand.id);
-    update('brandDna', brand as unknown as Record<string, unknown>);
+    update('brandDna', brand as CampaignBrandDna);
     setShowBrandModal(false);
   }, [update]);
 
@@ -225,7 +225,7 @@ export function Step1Setup({ data, update, onNext }: Step1SetupProps) {
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-zinc-700">브랜드 프리셋</h3>
             <BrandPresetCard
-              brandDna={data.brandDna as any}
+              brandDna={data.brandDna}
               onChangeBrand={() => setShowBrandModal(true)}
               onSkip={() => { update('brandId', null); update('brandDna', null); }}
             />

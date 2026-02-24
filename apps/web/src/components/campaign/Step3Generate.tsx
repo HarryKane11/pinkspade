@@ -28,8 +28,8 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
 
   const brandColors: string[] = (() => {
     if (!data.brandDna) return [];
-    const c = (data.brandDna as any).colors || {};
-    return [c.primary, c.secondary, c.accent, c.background, c.text].filter(Boolean);
+    const c = data.brandDna.colors ?? {};
+    return [c.primary, c.secondary, c.accent, c.background, c.text].filter((v): v is string => Boolean(v));
   })();
 
   // Generate assets on mount (once)
@@ -48,12 +48,12 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
         headline: data.headline,
         description: data.description,
         headlineFontSize: 48,
-        headlineFontFamily: (data.brandDna as any)?.typography?.heading || (data.brandDna as any)?.typography?.headingFont || 'Pretendard',
-        headlineColor: (data.brandDna as any)?.colors?.text || '#ffffff',
+        headlineFontFamily: data.brandDna?.typography?.heading || data.brandDna?.typography?.headingFont || 'Pretendard',
+        headlineColor: data.brandDna?.colors?.text || '#ffffff',
         descriptionFontSize: 24,
-        descriptionFontFamily: (data.brandDna as any)?.typography?.body || (data.brandDna as any)?.typography?.bodyFont || 'Pretendard',
-        descriptionColor: (data.brandDna as any)?.colors?.text || '#ffffff',
-        backgroundColor: (data.brandDna as any)?.colors?.background || '#1a1a2e',
+        descriptionFontFamily: data.brandDna?.typography?.body || data.brandDna?.typography?.bodyFont || 'Pretendard',
+        descriptionColor: data.brandDna?.colors?.text || '#ffffff',
+        backgroundColor: data.brandDna?.colors?.background || '#1a1a2e',
         status: 'loading',
       }));
       concepts.push({ id: conceptId, label: CONCEPT_LABELS[v] || `컨셉 ${v + 1}`, assets });
@@ -77,8 +77,8 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
         const moodLabels = data.moods;
         const brandDna = data.brandDna
           ? {
-              colors: (data.brandDna as any).colors,
-              tone: (data.brandDna as any).tone ? { keywords: (data.brandDna as any).tone.keywords } : undefined,
+              colors: data.brandDna.colors,
+              tone: data.brandDna.tone ? { keywords: data.brandDna.tone.keywords } : undefined,
             }
           : undefined;
 
@@ -215,9 +215,9 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
     handleApplyEdit({
       headline: data.headline,
       description: data.description,
-      headlineColor: (data.brandDna as any)?.colors?.text || '#ffffff',
-      descriptionColor: (data.brandDna as any)?.colors?.text || '#ffffff',
-      backgroundColor: (data.brandDna as any)?.colors?.background || '#1a1a2e',
+      headlineColor: data.brandDna?.colors?.text || '#ffffff',
+      descriptionColor: data.brandDna?.colors?.text || '#ffffff',
+      backgroundColor: data.brandDna?.colors?.background || '#1a1a2e',
       headlineFontSize: 48,
       descriptionFontSize: 24,
     });

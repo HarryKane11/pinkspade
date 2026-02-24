@@ -1,18 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+/** Get or auto-create the user's workspace */
+async function getOrCreateWorkspace(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { data: workspace } = await supabase
+    .from('workspaces')
+    .select('id')
+    .eq('owner_id', userId)
+    .single();
+
+  if (workspace) return workspace;
+
+  // Auto-create workspace if missing (defensive — the signup trigger should have created it)
+  console.warn(`[brands] No workspace for user ${userId}, creating one`);
+  const { data: newWorkspace, error } = await supabase
+    .from('workspaces')
+    .insert({ name: 'My Workspace', owner_id: userId })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[brands] Failed to create workspace:', error);
+    return null;
+  }
+  return newWorkspace;
+}
+
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Get user's workspace
-  const { data: workspace } = await supabase
-    .from('workspaces')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single();
-
+  const workspace = await getOrCreateWorkspace(supabase, user.id);
   if (!workspace) return NextResponse.json({ brands: [] });
 
   // Get brands with their current DNA
@@ -28,6 +47,7 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) {
+    console.error('[brands] GET join query failed:', error);
     // Fallback: simple query without join if FK doesn't exist
     const { data: simpleBrands } = await supabase
       .from('brands')
@@ -53,15 +73,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Brand name is required' }, { status: 400 });
   }
 
-  // Get user's workspace
-  const { data: workspace } = await supabase
-    .from('workspaces')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single();
-
+  const workspace = await getOrCreateWorkspace(supabase, user.id);
   if (!workspace) {
-    return NextResponse.json({ error: 'No workspace found' }, { status: 404 });
+    return NextResponse.json({ error: 'Failed to resolve workspace' }, { status: 500 });
   }
 
   // Create brand
@@ -76,6 +90,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (brandError) {
+    console.error('[brands] INSERT brand failed:', brandError);
     return NextResponse.json({ error: brandError.message }, { status: 500 });
   }
 
@@ -93,12 +108,22 @@ export async function POST(request: NextRequest) {
     .select()
     .single();
 
+  if (dnaError) {
+    console.error('[brands] INSERT brand_dna_versions failed:', dnaError);
+    // Brand was created but DNA version failed — still return the brand
+    // so the frontend at least has a reference, even without DNA
+  }
+
   if (!dnaError && dnaVersion) {
     // Update brand with current DNA reference
-    await supabase
+    const { error: updateError } = await supabase
       .from('brands')
       .update({ current_dna_id: dnaVersion.id })
       .eq('id', brand.id);
+
+    if (updateError) {
+      console.error('[brands] UPDATE current_dna_id failed:', updateError);
+    }
   }
 
   return NextResponse.json({

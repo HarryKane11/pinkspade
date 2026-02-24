@@ -1,7 +1,6 @@
 'use client';
 
 import { CheckCircle, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { ComplianceCheck } from './CampaignWizard';
 
 interface ComplianceChecklistProps {

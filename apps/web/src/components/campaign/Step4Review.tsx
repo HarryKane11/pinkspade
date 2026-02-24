@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Download, FileDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,7 @@ interface Step4ReviewProps {
 }
 
 // Client-side compliance checks
-function runComplianceChecks(assets: CampaignAsset[], brandDna: Record<string, unknown> | null): ComplianceCheck[] {
+function runComplianceChecks(assets: CampaignAsset[], brandDna: CampaignData['brandDna']): ComplianceCheck[] {
   const checks: ComplianceCheck[] = [];
 
   // Brand color consistency
@@ -70,7 +70,10 @@ export function Step4Review({ data, update, onBack, onGoToStep }: Step4ReviewPro
   const [exported, setExported] = useState(false);
 
   const selectedConcept = data.concepts.find((c) => c.id === data.selectedConceptId);
-  const assets = selectedConcept?.assets.filter((a) => a.status === 'ok') || [];
+  const assets = useMemo(
+    () => selectedConcept?.assets.filter((a) => a.status === 'ok') ?? [],
+    [selectedConcept],
+  );
   const selectedFormats = data.formats.filter((f) => f.checked);
   const totalCost = getCreditCost(data.modelId) * selectedFormats.length * data.variationCount;
 
@@ -207,7 +210,7 @@ export function Step4Review({ data, update, onBack, onGoToStep }: Step4ReviewPro
           </div>
           <div>
             <p className="text-zinc-400 text-xs">브랜드</p>
-            <p className="font-medium text-zinc-900">{(data.brandDna as any)?.name || '없음'}</p>
+            <p className="font-medium text-zinc-900">{data.brandDna?.name || '없음'}</p>
           </div>
         </div>
       </motion.div>

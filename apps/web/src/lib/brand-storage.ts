@@ -79,6 +79,23 @@ export async function getAllBrands(): Promise<StoredBrandDna[]> {
 export async function saveBrand(
   brand: Omit<StoredBrandDna, 'id'> & { id?: string }
 ): Promise<StoredBrandDna | null> {
+  const toLocal = (): StoredBrandDna => ({
+    id: brand.id ?? crypto.randomUUID(),
+    brandName: brand.brandName,
+    websiteUrl: brand.websiteUrl,
+    extractedAt: brand.extractedAt ?? new Date().toISOString(),
+    colors: brand.colors,
+    typography: brand.typography,
+    tone: brand.tone,
+  });
+
+  const saveLocal = (entry: StoredBrandDna) => {
+    const brands = readLocal();
+    brands.unshift(entry);
+    writeLocal(brands);
+    return entry;
+  };
+
   try {
     const res = await fetch('/api/brands', {
       method: 'POST',
@@ -92,24 +109,12 @@ export async function saveBrand(
       }),
     });
 
-    if (res.status === 401) {
-      // Fallback: save to localStorage
-      const local: StoredBrandDna = {
-        id: brand.id ?? crypto.randomUUID(),
-        brandName: brand.brandName,
-        websiteUrl: brand.websiteUrl,
-        extractedAt: brand.extractedAt ?? new Date().toISOString(),
-        colors: brand.colors,
-        typography: brand.typography,
-        tone: brand.tone,
-      };
-      const brands = readLocal();
-      brands.unshift(local);
-      writeLocal(brands);
-      return local;
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error(`[saveBrand] API error ${res.status}: ${body}`);
+      return saveLocal(toLocal());
     }
 
-    if (!res.ok) return null;
     const { brand: saved } = await res.json();
     const result: StoredBrandDna = {
       id: saved.id,
@@ -125,21 +130,9 @@ export async function saveBrand(
     locals.unshift(result);
     writeLocal(locals);
     return result;
-  } catch {
-    // Fallback: save to localStorage
-    const local: StoredBrandDna = {
-      id: brand.id ?? crypto.randomUUID(),
-      brandName: brand.brandName,
-      websiteUrl: brand.websiteUrl,
-      extractedAt: brand.extractedAt ?? new Date().toISOString(),
-      colors: brand.colors,
-      typography: brand.typography,
-      tone: brand.tone,
-    };
-    const brands = readLocal();
-    brands.unshift(local);
-    writeLocal(brands);
-    return local;
+  } catch (err) {
+    console.error('[saveBrand] Network error, falling back to localStorage:', err);
+    return saveLocal(toLocal());
   }
 }
 

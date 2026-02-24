@@ -9,9 +9,34 @@ import { Step1Setup } from './Step1Setup';
 import { Step2Creative } from './Step2Creative';
 import { Step3Generate } from './Step3Generate';
 import { Step4Review } from './Step4Review';
-import { cn } from '@/lib/utils';
-
 // Types
+export interface CampaignBrandDna {
+  id?: string;
+  name?: string;
+  brandName?: string;
+  colors?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    background?: string;
+    text?: string;
+    palette?: string[];
+  };
+  typography?: {
+    heading?: string;
+    headingFont?: string;
+    body?: string;
+    bodyFont?: string;
+    style?: string;
+  };
+  tone?: {
+    style?: string;
+    keywords?: string[];
+    metrics?: Record<string, number>;
+    voiceDescription?: string;
+  };
+}
+
 export interface CampaignFormat {
   id: string;
   label: string;
@@ -59,7 +84,7 @@ export interface CampaignData {
   // Step 1
   formats: CampaignFormat[];
   brandId: string | null;
-  brandDna: Record<string, unknown> | null;
+  brandDna: CampaignBrandDna | null;
   modelId: string;
   // Step 2
   prompt: string;
