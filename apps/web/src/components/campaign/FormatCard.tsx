@@ -48,11 +48,35 @@ export function FormatCard({
             <Loader2 className="w-6 h-6 text-zinc-300 animate-spin" />
           </div>
         ) : asset.imageUrl ? (
-          <img
-            src={asset.imageUrl}
-            alt={formatLabel}
-            className="w-full h-full object-cover"
-          />
+          <>
+            <img
+              src={asset.imageUrl}
+              alt={formatLabel}
+              className="w-full h-full object-cover"
+            />
+            {/* Text overlay (read-only) */}
+            {asset.textBoxes?.map((tb) => (
+              <div
+                key={tb.id}
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${tb.x}%`,
+                  top: `${tb.y}%`,
+                  width: `${tb.width}%`,
+                  height: `${tb.height}%`,
+                  color: tb.color,
+                  fontFamily: tb.fontFamily,
+                  fontWeight: tb.fontWeight,
+                  textAlign: tb.textAlign,
+                  fontSize: `clamp(6px, ${tb.fontSize * 0.15}px, 24px)`,
+                  lineHeight: 1.2,
+                  overflow: 'hidden',
+                }}
+              >
+                <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{tb.text}</span>
+              </div>
+            ))}
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-zinc-300 text-xs">
             생성 실패

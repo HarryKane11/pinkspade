@@ -166,7 +166,30 @@ export function Step4Review({ data, update, onBack, onGoToStep }: Step4ReviewPro
               <div key={asset.id} className="rounded-xl border border-zinc-200 overflow-hidden group" style={{ width: cardWidth, flexShrink: 0 }}>
                 <div className="bg-zinc-100 relative" style={{ aspectRatio: `${fmt?.width ?? 16} / ${fmt?.height ?? 9}` }}>
                   {asset.imageUrl && (
-                    <img src={asset.imageUrl} alt="" className="w-full h-full object-cover" />
+                    <>
+                      <img src={asset.imageUrl} alt="" className="w-full h-full object-cover" />
+                      {asset.textBoxes?.map((tb) => (
+                        <div
+                          key={tb.id}
+                          className="absolute pointer-events-none"
+                          style={{
+                            left: `${tb.x}%`,
+                            top: `${tb.y}%`,
+                            width: `${tb.width}%`,
+                            height: `${tb.height}%`,
+                            color: tb.color,
+                            fontFamily: tb.fontFamily,
+                            fontWeight: tb.fontWeight,
+                            textAlign: tb.textAlign,
+                            fontSize: `clamp(6px, ${tb.fontSize * 0.15}px, 24px)`,
+                            lineHeight: 1.2,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{tb.text}</span>
+                        </div>
+                      ))}
+                    </>
                   )}
                   <button
                     onClick={() => handleExportSingle(asset)}
