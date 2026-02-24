@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -224,11 +224,30 @@ export function CampaignWizard() {
     }
   }, []);
 
+  // Ensure all array fields are arrays before passing to children
+  // This guards against corrupted session data that may have non-array values
+  const safeData = useMemo<CampaignData>(() => ({
+    ...data,
+    formats: Array.isArray(data.formats) ? data.formats : [],
+    moods: Array.isArray(data.moods) ? data.moods : [],
+    forbiddenWords: Array.isArray(data.forbiddenWords) ? data.forbiddenWords : [],
+    requiredPhrases: Array.isArray(data.requiredPhrases) ? data.requiredPhrases : [],
+    concepts: Array.isArray(data.concepts)
+      ? data.concepts.map((c) => ({
+          ...c,
+          assets: Array.isArray(c.assets)
+            ? c.assets.map((a) => ({ ...a, textBoxes: Array.isArray(a.textBoxes) ? a.textBoxes : [] }))
+            : [],
+        }))
+      : [],
+    complianceResults: Array.isArray(data.complianceResults) ? data.complianceResults : [],
+  }), [data]);
+
   const stepContent = [
-    <Step1Setup key="step1" data={data} update={update} onNext={next} />,
-    <Step2Creative key="step2" data={data} update={update} onNext={next} onBack={back} />,
-    <Step3Generate key="step3" data={data} update={update} onNext={next} onBack={back} />,
-    <Step4Review key="step4" data={data} update={update} onBack={back} onGoToStep={goToStep} />,
+    <Step1Setup key="step1" data={safeData} update={update} onNext={next} />,
+    <Step2Creative key="step2" data={safeData} update={update} onNext={next} onBack={back} />,
+    <Step3Generate key="step3" data={safeData} update={update} onNext={next} onBack={back} />,
+    <Step4Review key="step4" data={safeData} update={update} onBack={back} onGoToStep={goToStep} />,
   ];
 
   return (
