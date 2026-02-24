@@ -250,7 +250,7 @@ export function Step3Generate({ data, update, onNext, onBack }: Step3GeneratePro
       backgroundColor: data.brandDna?.colors?.background || '#1a1a2e',
       headlineFontSize: 48,
       descriptionFontSize: 24,
-      textBoxes: asset.textBoxes.map((tb) => ({
+      textBoxes: (asset.textBoxes ?? []).map((tb) => ({
         ...tb,
         text: tb.type === 'headline' ? data.headline : data.description,
         color: textColor,

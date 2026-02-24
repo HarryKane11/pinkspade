@@ -195,12 +195,24 @@ export function CampaignWizard() {
     sessionStorage.setItem('campaignDraft', JSON.stringify({ step, data }));
   }, [step, data]);
 
-  // Restore on mount
+  // Restore on mount (normalize old data missing textBoxes)
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem('campaignDraft');
       if (saved) {
         const { step: savedStep, data: savedData } = JSON.parse(saved);
+        // Ensure all assets have textBoxes array (added in v2)
+        if (savedData.concepts) {
+          for (const concept of savedData.concepts) {
+            if (concept.assets) {
+              for (const asset of concept.assets) {
+                if (!Array.isArray(asset.textBoxes)) {
+                  asset.textBoxes = [];
+                }
+              }
+            }
+          }
+        }
         setStep(savedStep);
         setData(savedData);
       }
