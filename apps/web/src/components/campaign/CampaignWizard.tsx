@@ -47,6 +47,21 @@ export interface CampaignFormat {
   checked: boolean;
 }
 
+export interface TextBox {
+  id: string;
+  type: 'headline' | 'description';
+  x: number;       // % from left (0-100)
+  y: number;       // % from top (0-100)
+  width: number;   // % of container width
+  height: number;  // % of container height
+  text: string;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  fontWeight: number;
+  textAlign: 'left' | 'center' | 'right';
+}
+
 export interface CampaignAsset {
   id: string;
   conceptId: string;
@@ -61,6 +76,7 @@ export interface CampaignAsset {
   descriptionFontFamily: string;
   descriptionColor: string;
   backgroundColor: string;
+  textBoxes: TextBox[];
   status: 'loading' | 'ok' | 'text-overflow' | 'compliance-warning' | 'error';
   statusMessage?: string;
 }
