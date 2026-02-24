@@ -3,7 +3,7 @@ import './globals.css';
 import { CreditProvider } from '@/contexts/credit-context';
 import { JsonLd } from '@/components/seo/JsonLd';
 
-const SITE_URL = 'https://pinkspade.co';
+const SITE_URL = 'https://pinkspade.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

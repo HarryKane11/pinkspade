@@ -18,6 +18,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://pinkspade.co/sitemap.xml',
+    sitemap: 'https://pinkspade.app/sitemap.xml',
   };
 }

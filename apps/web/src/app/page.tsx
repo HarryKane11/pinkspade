@@ -21,7 +21,7 @@ export default function HomePage() {
           '@context': 'https://schema.org',
           '@type': 'WebApplication',
           name: 'Pink Spade',
-          url: 'https://pinkspade.co',
+          url: 'https://pinkspade.app',
           applicationCategory: 'DesignApplication',
           operatingSystem: 'Web',
           offers: {

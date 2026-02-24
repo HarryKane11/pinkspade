@@ -119,7 +119,7 @@ export default function HomeContent() {
             <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
             <div className="mx-auto text-xs text-zinc-400 font-medium font-mono flex items-center gap-2">
               <Lock className="w-3 h-3" />
-              studio.pinkspade.com
+              studio.pinkspade.app
             </div>
           </div>
 
