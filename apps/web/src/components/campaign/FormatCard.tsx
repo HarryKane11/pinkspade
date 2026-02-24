@@ -9,6 +9,8 @@ interface FormatCardProps {
   formatLabel: string;
   formatDimensions: string;
   formatLogo: string;
+  formatWidth: number;
+  formatHeight: number;
   selected: boolean;
   onClick: () => void;
   onRegenerate: () => void;
@@ -19,6 +21,8 @@ export function FormatCard({
   formatLabel,
   formatDimensions,
   formatLogo,
+  formatWidth,
+  formatHeight,
   selected,
   onClick,
   onRegenerate,
@@ -35,7 +39,10 @@ export function FormatCard({
       )}
     >
       {/* Image preview or skeleton */}
-      <div className="aspect-video bg-zinc-100 relative overflow-hidden">
+      <div
+        className="bg-zinc-100 relative overflow-hidden"
+        style={{ aspectRatio: `${formatWidth} / ${formatHeight}`, maxHeight: 280 }}
+      >
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 className="w-6 h-6 text-zinc-300 animate-spin" />

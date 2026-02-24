@@ -157,15 +157,14 @@ export function Step4Review({ data, update, onBack, onGoToStep }: Step4ReviewPro
         transition={{ delay: 0.15, duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
       >
         <h3 className="text-sm font-semibold text-zinc-700 mb-3">최종 에셋 미리보기</h3>
-        <div
-          className="grid gap-4"
-          style={{ gridTemplateColumns: `repeat(${Math.min(assets.length || 1, 4)}, 1fr)` }}
-        >
+        <div className="flex flex-wrap gap-4">
           {assets.map((asset) => {
             const fmt = selectedFormats.find((f) => f.id === asset.formatId);
+            const ar = (fmt?.width ?? 16) / (fmt?.height ?? 9);
+            const cardWidth = ar >= 2 ? '100%' : ar >= 1 ? '220px' : '180px';
             return (
-              <div key={asset.id} className="rounded-xl border border-zinc-200 overflow-hidden group">
-                <div className="aspect-video bg-zinc-100 relative">
+              <div key={asset.id} className="rounded-xl border border-zinc-200 overflow-hidden group" style={{ width: cardWidth, flexShrink: 0 }}>
+                <div className="bg-zinc-100 relative" style={{ aspectRatio: `${fmt?.width ?? 16} / ${fmt?.height ?? 9}` }}>
                   {asset.imageUrl && (
                     <img src={asset.imageUrl} alt="" className="w-full h-full object-cover" />
                   )}

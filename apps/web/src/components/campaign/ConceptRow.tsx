@@ -56,26 +56,26 @@ export function ConceptRow({
         </button>
       </div>
 
-      <div
-        className="grid gap-3"
-        style={{
-          gridTemplateColumns: `repeat(${Math.min(checkedFormats.length, 4)}, 1fr)`,
-        }}
-      >
+      <div className="flex flex-wrap gap-3">
         {checkedFormats.map((fmt) => {
           const asset = assets.find((a) => a.formatId === fmt.id);
           if (!asset) return null;
+          const ar = fmt.width / fmt.height;
+          const cardWidth = ar >= 2 ? '100%' : ar >= 1 ? '220px' : '180px';
           return (
-            <FormatCard
-              key={asset.id}
-              asset={asset}
-              formatLabel={fmt.label}
-              formatDimensions={`${fmt.width}×${fmt.height}`}
-              formatLogo={fmt.logo}
-              selected={editingAssetId === asset.id}
-              onClick={() => onAssetClick(asset.id)}
-              onRegenerate={() => onRegenerate(asset.id)}
-            />
+            <div key={asset.id} style={{ width: cardWidth, flexShrink: 0 }}>
+              <FormatCard
+                asset={asset}
+                formatLabel={fmt.label}
+                formatDimensions={`${fmt.width}×${fmt.height}`}
+                formatLogo={fmt.logo}
+                formatWidth={fmt.width}
+                formatHeight={fmt.height}
+                selected={editingAssetId === asset.id}
+                onClick={() => onAssetClick(asset.id)}
+                onRegenerate={() => onRegenerate(asset.id)}
+              />
+            </div>
           );
         })}
       </div>
